@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/martin/Documents/path_finding/utils/keyboard.cpp
+keyboard.h
+/home/martin/Documents/path_finding/utils/keyboard.h
+linux/input.h
+-
+fcntl.h
+-
+errno.h
+-
+unistd.h
+-
+
+/home/martin/Documents/path_finding/utils/keyboard.h
+stdio.h
+-
+stdint.h
+-
+string.h
+-
+string
+-
+linux/input-event-codes.h
+-
+

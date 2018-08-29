@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+<world name="irobot_world">
+
+<!-- Sun -->
+<include>
+  <uri>model://sun</uri>
+</include>
+
+<!-- Ground Plane -->
+<include>
+  <uri>model://ground_plane</uri>
+</include>
+
+<!-- iRobot -->
+<include>
+  <uri>model://irobot</uri>
+</include>
+
+</world>
+</sdf>
