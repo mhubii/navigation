@@ -121,6 +121,15 @@
         <yarpConfigurationFile>model://irobot/conf/r_camera.ini</yarpConfigurationFile>
       </plugin>
     </sensor>
+
+    <sensor type="imu" name="imu">
+      <pose>0 0 0 0 0 0</pose>
+      <always_on>1</always_on>
+      <update_rate>100</update_rate>
+      <plugin filename='libgazebo_yarp_imu.so' name='imu_plugin'>
+        <yarpConfigurationFile>model://irobot/conf/chassis_intertial.ini</yarpConfigurationFile>
+      </plugin>
+    </sensor>
   </link>
 
   <link name="l_front_wheel">
