@@ -19,7 +19,7 @@ IRobotPlugin::IRobotPlugin() :
 	ModelPlugin() {
 
 	op_mode_   = USER_MANUAL;
-	vel_delta_ = 0.1;
+	vel_delta_ = 1e-3;
 
 	for (int i = 0; i < DOF; i++) {
 	
