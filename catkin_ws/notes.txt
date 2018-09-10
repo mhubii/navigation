@@ -1,0 +1,1 @@
+need to write an exe that reads from yarp ports and publishes them to ros topics. Should be launched by a roslaunch file within the pipeline.
