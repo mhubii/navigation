@@ -1,325 +1,326 @@
 #include <iostream>
-#include <vector>
 #include <stdio.h>
-
-#include "ros/ros.h"
-#include "image_transport/image_transport.h"
-#include "sensor_msgs/image_encodings.h"
-#include "cv_bridge/cv_bridge.h"
+#include <vector>
+#include <signal.h>
 
 #include <yarp/os/all.h>
 #include <yarp/dev/all.h>
-#include <yarp/rosmsg/TickTime.h>
+#include <yarp/sig/all.h>
 #include <yarp/rosmsg/sensor_msgs/Imu.h>
 #include <yarp/rosmsg/sensor_msgs/Image.h>
-
-#include <opencv2/opencv.hpp>
+#include <yarp/rosmsg/impl/yarpRosHelper.h>
 
 // A port that stores the value last received.
-class IMUPort : public yarp::os::Publisher<yarp::rosmsg::sensor_msgs::Imu>
+class ImuPort : public yarp::os::Port
 {
 public:
 
-	IMUPort() {
-
-		//setCallbackLock(&mutex_);
-		setReader(imu_);
-	}
-
-	yarp::sig::Vector LastRead() {
-
-		//lockCallback();
-		//yarp::sig::Vector tmp = last_;
-		//unlockCallback();
-		
-		//return tmp;		
-	}
-
-private:
-
-	yarp::rosmsg::sensor_msgs::Imu imu_;
-	yarp::sig::Vector last_;
-	yarp::os::Mutex mutex_;
-};
-
-class IMGPort : public yarp::os::Port
-{
-public:
-
-	IMGPort() {
+	ImuPort() {
 
 		setCallbackLock(&mutex_);
 		setReader(last_);
 	}
 
-	yarp::os::Bottle LastRead() {
+	// Return last received value.
+	yarp::sig::VectorOf<yarp::os::NetFloat64> LastRead() {
 
 		lockCallback();
-		yarp::os::Bottle tmp = last_;
+		yarp::sig::VectorOf<yarp::os::NetFloat64> tmp = last_;
 		unlockCallback();
 
-		return tmp;
-	};
+		return tmp;		
+	}
 
 private:
 
-	yarp::os::Bottle last_;
+	yarp::sig::VectorOf<yarp::os::NetFloat64> last_;
 	yarp::os::Mutex mutex_;
 };
 
 
-int main(int argc, char** argv)
+// YarpToRosImg implements a yarp::os::RateThread that
+// reads data from a remote camera device and publishes 
+// it to a Ros topic.
+class YarpToRosImg : public yarp::os::RateThread
 {
+public:
 
-	yarp::os::Network yarp;
+	YarpToRosImg(int period, std::string local, std::string remote, std::string topic) : yarp::os::RateThread(period), local_(local), remote_(remote), topic_(topic) {	};
 
-	double now = yarp::os::Time::now();
-
-	// Publish camera view.
-	//yarp::os::Property options;
-
-	//options.put("device", "remote_grabber");
-	//options.put("local", "/client/cam0/image_raw");
-	//options.put("remote", "/irobot/cam/left");
-
-	//yarp::dev::PolyDriver* dd = new yarp::dev::PolyDriver(options);
-
-	//yarp::dev::IFrameGrabberImage* f;
-	//dd->view(f);
-
-	//yarp::sig::ImageOf<yarp::sig::PixelRgb> img;
-	//cv::Mat img_cv_rgb;
-	//cv::Mat img_cv_gray;
-
-	// Show image.
-	//cv::namedWindow("Display Window", cv::WINDOW_AUTOSIZE);
-
-	// Read IMG.
-	//IMGPort img;
-	//img.open("/client/cam/left");
-	//yarp.connect("/irobot/cam/left", "/client/cam/left");
-	
-	// ROS (YARP).
-	//yarp::os::Node ros_node("/yarp_to_ros/node");   
-
-	//yarp::os::Publisher<yarp::rosmsg::sensor_msgs::Image> ros_pub_port; 
-	//ros_pub_port.topic("/yarp_to_ros/topic");
-	//yarp::rosmsg::sensor_msgs::Image& ros_data = ros_pub_port.prepare();
-
-	//while (yarp::os::Time::now() - now < 20) {
-	
-		//yarp::rosmsg::sensor_msgs::Image data;
-		//std::cout << img.LastRead().toString() << std::endl;
-		//data.writeBare(img.LastRead());
-
-		//ros_pub_port.write(data);
-	//}
-
-	//img.close();
-
-
-
-/*
-	yarp::os::NetUint32 msg_counter = 0;
-
-	while (yarp::os::Time::now() - now < 20) {
-
-		f->getImage(img);
-
-		// Convert the images to a format that OpenCV uses.
-		img_cv_rgb = cv::cvarrToMat(img.getIplImage());
-
-		// Convert to gray image.
-		//cv::cvtColor(img_cv_rgb, img_cv_gray, cv::COLOR_RGB2GRAY);
-		// Convert to unsigned int 8.
-		//cv::normalize(img_cv, img_cv, 0, 255, CV_MINMAX, CV_8U);
-
-		cv::imshow("Display Window", img_cv_rgb);
-
-		cv::waitKey(10);
-		yarp::os::Time::delay(0.01); // Publish an image as a ros::sensor_msgs::Image to a topic.
-
-		// Write to ROS port.
-		ros_data.header.seq = msg_counter++;
-		ros_data.header.stamp = yarp::os::Time::now();
-		ros_data.header.frame_id = "chassis";
-
-		ros_data.height = std::uint32_t(img.height());
-		ros_data.width = std::uint32_t(img.width());
-
-		ros_data.encoding = "rgb8";
-		ros_data.is_bigendian = std::uint8_t(0);
-		ros_data.step = std::uint32_t(img.getRowSize());
-
-		std::vector<std::uint8_t> data(img.getRawImage(), img.getRawImage() + img.getRawImageSize());
-
-		ros_data.data = data;
-
-		printf("Squence: %d\n", ros_data.header.seq);
-		printf("Time  s: %d\n", ros_data.header.stamp.sec);
-		printf("Time ns: %d\n", ros_data.header.stamp.nsec);
-		printf("Height : %d\n", ros_data.height);
-		printf("Width  : %d\n", ros_data.width);
-		printf("Step   : %d\n", ros_data.step);
-		printf("Pixel  : %d\n", img.getPixelSize());
-		printf("Size   : %d\n", img.getRawImageSize());
-		printf("Sample : %d\n", ros_data.data[0]);
-
-
-		ros_pub_port.write();
-		yarp::os::Time::delay(1);
-	}
-*/
-
-	//ros_pub_port.interrupt();
-	//ros_pub_port.close();
-
-	//ros_node.interrupt();
-
-
-
-
-/*
-	// ROS.
-	ros::init(argc, argv, "yarp_to_ros_pub");
-	ros::NodeHandle nh;
-	image_transport::ImageTransport it(nh);
-	image_transport::Publisher pub = it.advertise("/cam0/image_raw", 1);
-
-	while (yarp::os::Time::now() - now < 40) {
-
-		f->getImage(img);
-
-		// Convert the images to a format that OpenCV uses.
-		img_cv_rgb = cv::cvarrToMat(img.getIplImage());
-
-		// Convert to gray image.
-		cv::cvtColor(img_cv_rgb, img_cv_gray, cv::COLOR_RGB2GRAY);
-
-		// Opencv imshow.
-		cv::imshow("Display Window", img_cv_rgb);
-
-		cv::waitKey(10);
-		yarp::os::Time::delay(0.01);
-
-		// Publish on ros.
-		sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "rgb8", img_cv_gray).toImageMsg();
-
-		pub.publish(msg);
-		ros::spinOnce();	
-	}
-*/	
-	//dd->close();
-	//delete dd;
-
-	
-
-	// Read IMU.
-	yarp::os::Node node("/yarp/ros");
-
-	//IMUPort imu;
-	//imu.open("/client/intertial");
-	//yarp.connect("/irobot/inertial", "/client/inertial");
-	//imu.topic("/rostopic/inertial");
-
-
-	// Extract images.
-	yarp::os::Property options;
-
-	options.put("device", "remote_grabber");
-	options.put("local", "/client/cam0/image_raw");
-	options.put("remote", "/irobot/cam/left");
-
-	yarp::dev::PolyDriver* dd = new yarp::dev::PolyDriver(options);
-
-	yarp::dev::IFrameGrabberImage* f;
-	dd->view(f);
-
-	yarp::sig::ImageOf<yarp::sig::PixelRgb> img;
-	yarp::sig::ImageOf<yarp::sig::PixelMono> mono;
-
-
-	// Publish to ROS.
-	yarp::os::Publisher<yarp::rosmsg::sensor_msgs::Image> publisher;
-
-	publisher.topic("/topic");
-
-	std::uint32_t msg_count = 0;	
-
-	while (yarp::os::Time::now() - now < 60) {
+	// Call run every period milliseconds.
+	virtual void run() {
 
 		// Get image.
-		f->getImage(img);
-		mono.copy(img);
-
+		fg_->getImage(rgb_);
+		mono_.copy(rgb_, rgb_.width(), rgb_.height());
 
 		// Publish to ROS.		
-		yarp::rosmsg::sensor_msgs::Image& msg = publisher.prepare();
+		yarp::rosmsg::sensor_msgs::Image& msg = publisher_.prepare();
 
 		// Header
-		msg.header.seq = msg_count++;
+		msg.header.seq = msg_count_++;
 		msg.header.stamp = yarp::os::Time::now();
 		msg.header.frame_id = "chassis";
 
 		// Size.
-		msg.height = mono.height();
-		msg.width = mono.width();
+		msg.height = mono_.height();
+		msg.width = mono_.width();
 
 		// Encoding.
 		msg.encoding = "mono8";
 		msg.is_bigendian = 0;
-		msg.step = mono.getRowSize();
+		msg.step = mono_.getRowSize();
 
 		// Data.
-		//std::vector<std::uint8_t> data(10000, 2);
-		//std::generate(data.begin(), data.end(),  [n = 0] () mutable { return n++%100; });
-
-		std::vector<std::uint8_t> data(mono.getRawImage(), mono.getRawImage() + mono.getRawImageSize());
+		std::vector<std::uint8_t> data(mono_.getRawImage(), mono_.getRawImage() + mono_.getRawImageSize());
 		msg.data = data;
 
-		publisher.write();
-	}
+		publisher_.write();
+	};
 
-	//yarp::os::Time::delay(10);
-	//yarp.connect("/irobot/inertial", "/client/inertial");
+	// Initialize the thread. On false return, thread doesn't call run and exits.
+	virtual bool threadInit() {
+
+		// Publisher.
+		if (!publisher_.topic(topic_)) {
+
+			std::cerr << "Could not publish to topic " << topic_ << std::endl;
+			std::exit(1);
+		};
+
+		// Device driver.
+		options_.put("device", "remote_grabber");
+		options_.put("local", local_);
+		options_.put("remote", remote_);
+
+		pd_ = new yarp::dev::PolyDriver(options_);
+
+		if (!pd_->isValid()) {
+
+			std::cerr << "Device driver remote_grabber not available." << std::endl;
+			std::exit(1);
+		}
+
+		if (!pd_->view(fg_)) {
+
+			std::cerr << "Coult not acquire interface." << std::endl;
+			std::exit(1);
+		};
+
+		return true;	
+	};
+
+	// Release the thread.
+	virtual void threadRelease() {
+
+		publisher_.close();
+		pd_->close();
+		delete pd_;
+	};
+
+private:
+
+	// Local and remote port.
+	std::string local_;
+	std::string remote_;
+
+	// Topic to publish to.
+	std::string topic_;
+
+	// Publisher.
+	yarp::os::Publisher<yarp::rosmsg::sensor_msgs::Image> publisher_;
+
+	// Message counter.
+	std::uint32_t msg_count_ = 0;
+
+	// Device driver and options.
+	yarp::dev::PolyDriver* pd_;
+
+	yarp::os::Property options_;
+
+	// Interface to device driver.
+	yarp::dev::IFrameGrabberImage* fg_;
+
+	// Image.
+	yarp::sig::ImageOf<yarp::sig::PixelRgb> rgb_;
+	yarp::sig::ImageOf<yarp::sig::PixelMono> mono_;
+};
+
+
+// YarpToRosImu implements a yarp::os::RateThread that
+// reads data from a remote inertial measurement unit
+// and publishes it to a Ros topic.
+class YarpToRosImu : public yarp::os::RateThread
+{
+public:
+
+	YarpToRosImu(int period, std::string local, std::string remote, std::string topic) : yarp::os::RateThread(period), local_(local), remote_(remote), topic_(topic), covariance_(9, 0) {	};
+
+	// Call run every period milliseconds.
+	virtual void run() {
+
+		// Get inertial measurement.
+		imu_ = imup_.LastRead();
+
+		if (imu_.data() == YARP_NULLPTR) {
+
+			return;
+		}
+
+		// Publish to ROS.		
+		yarp::rosmsg::sensor_msgs::Imu& msg = publisher_.prepare();
+
+		// Header.
+                msg.header.seq = msg_count_++;
+                msg.header.stamp = yarp::os::Time::now();
+                msg.header.frame_id = "chassis";
+
+		// Orientation.
+                double euler_xyz[3], quaternion[4];
+
+                euler_xyz[0] = imu_(0);
+                euler_xyz[1] = imu_(1);
+                euler_xyz[2] = imu_(2);
+
+                convertEulerAngleYXZdegrees_to_quaternion(euler_xyz, quaternion);
+
+                msg.orientation.x = quaternion[0];
+                msg.orientation.y = quaternion[1];
+                msg.orientation.z = quaternion[2];
+                msg.orientation.w = quaternion[3];
+                msg.orientation_covariance = covariance_;
+
+		// Linear acceleration.
+                msg.linear_acceleration.x = imu_(3);   // [m/s^2]
+                msg.linear_acceleration.y = imu_(4);   // [m/s^2]
+                msg.linear_acceleration.z = imu_(5);   // [m/s^2]
+                msg.linear_acceleration_covariance = covariance_;
+
+		// Angular acceleration.
+                msg.angular_velocity.x = imu_(6);   // to be converted into rad/s (?) - verify with users
+                msg.angular_velocity.y = imu_(7);   // to be converted into rad/s (?) - verify with users
+                msg.angular_velocity.z = imu_(8);   // to be converted into rad/s (?) - verify with users
+                msg.angular_velocity_covariance = covariance_;
+
+		publisher_.write();
+	};
+
+	// Initialize the thread. On false return, thread doesn't call run and exits.
+	virtual bool threadInit() {
+
+		// Publisher.
+		if (!publisher_.topic(topic_)) {
+
+			std::cerr << "Could not publish to topic " << topic_ << std::endl;
+			std::exit(1);
+		};
+
+		// Port to device.
+		if (!imup_.open(local_)) {
+
+			std::cerr << "Could not open port " << local_ << std::endl;
+			std::exit(1);
+		};
+
+		// Connect to remote device.
+		if (!yarp::os::Network::connect(remote_, local_)) {
+
+			std::cerr << "Could not connect remote " << remote_ << " with local " << local_ << std::endl;
+			std::exit(1);
+		}
+	};
+
+	// Release the thread.
+	virtual void threadRelease() {
+
+		publisher_.close();
+		imup_.close();
+	};
+
+private:
+
+	// Local and remote port.
+	std::string local_;
+	std::string remote_;
+
+	// Topic to publish to.
+	std::string topic_;
+
+	// Publisher.
+	yarp::os::Publisher<yarp::rosmsg::sensor_msgs::Imu> publisher_;
+
+	// Zero matrix to store covariance needed by Ros msg.
+	std::vector<yarp::os::NetFloat64> covariance_;
+
+	// Message counter.
+	std::uint32_t msg_count_ = 0;
+
+	// Port to device.
+	ImuPort imup_;
+
+	// Imu.
+	yarp::sig::VectorOf<yarp::os::NetFloat64> imu_;
+};
+
+
+// Forward declare threads.
+YarpToRosImg* l_cam;
+YarpToRosImg* r_cam;
+YarpToRosImu* imu;
+
+
+// This is called when Ctrl-C is pressed. It stops
+// all threads and then exits.
+void my_handler(int s) {
+
+	printf("Caught signal %d\n", s);
 	
-	//while (yarp::os::Time::now() - now < 10) {
-
-	//	std::printf("IMU returns: %s\n", imu.LastRead().toString().c_str());	
-	//}
+	l_cam->stop();
+	r_cam->stop();
+	imu->stop();
 	
+	delete l_cam;
+	delete r_cam;
+	delete imu;
 
-	// Check for ServerInertial::run() to see how yarp publishes to ros.
-	//yarp::os::Node node("/yarp/ros_pub");
+	std::exit(EXIT_SUCCESS); 
+}
 
-	//yarp::os::Publisher<yarp::rosmsg::sensor_msgs::Imu> publisher;
 
-	//if (!publisher.topic("/imu0")) {
+// Main.
+int main(int argc, char** argv)
+{
+	// Initialize network.
+	yarp::os::Network yarp;
+	yarp::os::Node node("/yarp_to_ros");
 
-	//	std::cerr << "Failed to create publisher to /imu0\n";
-	//	return -1;
-	//}
+	// Call my_handler() when a SIGINT signal is received.
+	struct sigaction sigIntHandler;
+	sigIntHandler.sa_handler = my_handler;
+	sigemptyset(&sigIntHandler.sa_mask);
+	sigIntHandler.sa_flags = 0;
+	sigaction(SIGINT, &sigIntHandler, NULL);
 
-	//while (yarp::os::Time::now() - now < 20) {
+	// Initialize threads.
+	l_cam = new YarpToRosImg(10, "/client/cam/left", "/irobot/cam/left", "/cam0/image_raw");
+	r_cam = new YarpToRosImg(10, "/client/cam/right", "/irobot/cam/right", "/cam1/image_raw");
+	imu = new YarpToRosImu(10, "/client/inertial", "/irobot/inertial", "/imu0");
+
+	l_cam->start();
+	r_cam->start();
+	imu->start();
+
+	// Pause the main thread until an interrupt is received.
+	system("read -p '\nPress enter to continue or CTRL-C to abort...\n\n' var");
 	
-	//	yarp::rosmsg::sensor_msgs::Imu data;
+	l_cam->stop();
+	r_cam->stop();
+	imu->stop();
 
-	//	data.writeBare(imu.LastRead());
-
-	//	publisher.write(data);
-	//}
-
-	publisher.close();
-	node.interrupt();
-	dd->close();
-	delete dd;
-
-	// Publish on ROS topic.
-	//ros::init(argc, argv, "yarp_to_ros_pub");
-
-	//ros::NodeHandle n;
-
-	//ros::Publisher pub = n.advertise<sensor_msgs::Imu>("imu0", 1000);
+	delete l_cam;
+	delete r_cam;
+	delete imu;
 
 	return 0;
 }
+

@@ -17,7 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(YARP REQUIRED)
-find_package(OpenCV REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -213,5 +212,5 @@ target_link_libraries(listener ${catkin_LIBRARIES})
 #add_dependencies(listener beginner_tutorials_generate_messages_cpp)
 
 add_executable(yarp_to_ros_pub src/yarp_to_ros_pub.cpp)
-target_link_libraries(yarp_to_ros_pub ${catkin_LIBRARIES} ${YARP_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(yarp_to_ros_pub ${catkin_LIBRARIES} ${YARP_LIBRARIES})
     
