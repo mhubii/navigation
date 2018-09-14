@@ -38,6 +38,138 @@ private:
 };
 
 
+// YarpToRosStereoImg implements a yarp os::RateThread
+// that reads data from two remote camera devices and
+// publishes it to a Ros topic.
+class YarpToRosStereoImg : public yarp::os::RateThread
+{
+public:
+	
+	YarpToRosStereoImg(int period, std::vector<std::string> locals, std::vector<std::string> remotes, std::vector<std::string> topics) : yarp::os::RateThread(period), locals_(locals), remotes_(remotes), topics_(topics), publishers_(locals.size()), pds_(locals.size()), fgs_(locals.size()), rgbs_(locals.size()), monos_(locals.size()) {
+
+		// Pre-check.
+		if (locals_.size() != remotes_.size() || remotes_.size() != topics_.size()) {
+		
+			std::cerr << "Didn't receive same number of local ports, remote ports and topics." << std::endl;
+			std::exit(1);	
+		}
+	};
+
+	virtual void run() {
+
+		// Assure all images get the same time stamp and msg count.
+		std::uint32_t count = msg_count_++;
+		yarp::rosmsg::TickTime time = yarp::os::Time::now();
+
+		// Read images for minimal time delay.
+		for (int i = 0; i < locals_.size(); i++) {
+	
+			fgs_[i]->getImage(rgbs_[i]);
+		}
+
+		for (int i = 0; i < locals_.size(); i++) {
+			
+			// Convert images.
+			monos_[i].copy(rgbs_[i], rgbs_[i].width(), rgbs_[i].height());
+
+			// Publish to ROS.		
+			yarp::rosmsg::sensor_msgs::Image& msg = publishers_[i].prepare();
+
+			// Header
+			msg.header.seq = count;
+			msg.header.stamp = time;
+			msg.header.frame_id = "chassis";
+
+			// Size.
+			msg.height = monos_[i].height();
+			msg.width = monos_[i].width();
+
+			// Encoding.
+			msg.encoding = "mono8";
+			msg.is_bigendian = 0;
+			msg.step = monos_[i].getRowSize();
+
+			// Data.
+			std::vector<std::uint8_t> data(monos_[i].getRawImage(), monos_[i].getRawImage() + monos_[i].getRawImageSize());
+			msg.data = data;
+
+			publishers_[i].write();
+		}
+	};
+
+	virtual bool threadInit() {
+
+		for (int i = 0; i < locals_.size(); i++) {
+			
+			// Publisher.
+			if (!publishers_[i].topic(topics_[i])) {
+
+				std::cerr << "Could not publish to topic " << topics_[i] << std::endl;
+				return false;
+			};
+
+			// Device driver.
+			yarp::os::Property options;
+
+			options.put("device", "remote_grabber");
+			options.put("local", locals_[i]);
+			options.put("remote", remotes_[i]);
+
+			pds_[i] = new yarp::dev::PolyDriver(options);
+
+			if (!pds_[i]->isValid()) {
+
+				std::cerr << "Device driver remote_grabber not available." << std::endl;
+				return false;
+			}
+
+			if (!pds_[i]->view(fgs_[i])) {
+
+				std::cerr << "Coult not acquire interface." << std::endl;
+				return false;
+			};
+		}
+
+		return true;
+	}
+
+	virtual void threadRelease() {
+
+		for (int i = 0; i < locals_.size(); i++) {
+			
+			publishers_[i].close();
+			pds_[i]->close();
+			delete pds_[i];
+		}
+	}
+
+private:
+
+	// Local and remote port.
+	std::vector<std::string> locals_;
+	std::vector<std::string> remotes_;
+
+	// Topic to publish to.
+	std::vector<std::string> topics_;
+
+	// Publisher.
+	std::vector<yarp::os::Publisher<yarp::rosmsg::sensor_msgs::Image>> publishers_;
+
+	// Message counter.
+	std::uint32_t msg_count_ = 0;
+
+	// Device driver and options.
+	std::vector<yarp::dev::PolyDriver*> pds_;
+
+	// Interface to device driver.
+	std::vector<yarp::dev::IFrameGrabberImage*> fgs_;
+
+	// Image.
+	std::vector<yarp::sig::ImageOf<yarp::sig::PixelRgb>> rgbs_;
+	std::vector<yarp::sig::ImageOf<yarp::sig::PixelMono>> monos_;
+
+};
+
 // YarpToRosImg implements a yarp::os::RateThread that
 // reads data from a remote camera device and publishes 
 // it to a Ros topic.
@@ -85,26 +217,28 @@ public:
 		if (!publisher_.topic(topic_)) {
 
 			std::cerr << "Could not publish to topic " << topic_ << std::endl;
-			std::exit(1);
+			return false;
 		};
 
 		// Device driver.
-		options_.put("device", "remote_grabber");
-		options_.put("local", local_);
-		options_.put("remote", remote_);
+		yarp::os::Property options;
 
-		pd_ = new yarp::dev::PolyDriver(options_);
+		options.put("device", "remote_grabber");
+		options.put("local", local_);
+		options.put("remote", remote_);
+
+		pd_ = new yarp::dev::PolyDriver(options);
 
 		if (!pd_->isValid()) {
 
 			std::cerr << "Device driver remote_grabber not available." << std::endl;
-			std::exit(1);
+			return false;
 		}
 
 		if (!pd_->view(fg_)) {
 
 			std::cerr << "Coult not acquire interface." << std::endl;
-			std::exit(1);
+			return false;
 		};
 
 		return true;	
@@ -133,10 +267,8 @@ private:
 	// Message counter.
 	std::uint32_t msg_count_ = 0;
 
-	// Device driver and options.
+	// Device driver.
 	yarp::dev::PolyDriver* pd_;
-
-	yarp::os::Property options_;
 
 	// Interface to device driver.
 	yarp::dev::IFrameGrabberImage* fg_;
@@ -264,6 +396,67 @@ private:
 
 
 // Forward declare threads.
+YarpToRosStereoImg* s_cam;
+YarpToRosImu* imu;
+
+
+// This is called when Ctrl-C is pressed. It stops
+// all threads and then exits.
+void my_handler(int s) {
+
+	printf("Caught signal %d\n", s);
+	
+	s_cam->stop();
+	imu->stop();
+	
+	delete s_cam;
+	delete imu;
+
+	std::exit(EXIT_SUCCESS); 
+}
+
+
+// Main with stereo images.
+int main(int argc, char** argv)
+{
+
+	// Initialize network.
+	yarp::os::Network yarp;
+	yarp::os::Node node("/yarp_to_ros");
+
+	// Call my_handler() when a SIGINT signal is received.
+	struct sigaction sigIntHandler;
+	sigIntHandler.sa_handler = my_handler;
+	sigemptyset(&sigIntHandler.sa_mask);
+	sigIntHandler.sa_flags = 0;
+	sigaction(SIGINT, &sigIntHandler, NULL);
+
+	// Initialize threads.
+	std::vector<std::string> locals = {"/client/cam/left", "/client/cam/right"};
+	std::vector<std::string> remotes = {"/irobot/cam/left", "/irobot/cam/right"};
+	std::vector<std::string> topics = {"/cam0/image_raw", "/cam1/image_raw"};
+
+	
+	s_cam = new YarpToRosStereoImg(10, locals, remotes, topics);
+	imu = new YarpToRosImu(10, "/client/inertial", "/irobot/inertial", "/imu0");
+
+	s_cam->start();
+	imu->start();
+
+	// Pause the main thread until an interrupt is received.
+	system("read -p '\nPress enter to continue or CTRL-C to abort...\n\n' var");
+	
+	s_cam->stop();
+	imu->stop();
+
+	delete s_cam;
+	delete imu;
+
+	return 0;
+}
+
+/*
+// Forward declare threads.
 YarpToRosImg* l_cam;
 YarpToRosImg* r_cam;
 YarpToRosImu* imu;
@@ -287,9 +480,10 @@ void my_handler(int s) {
 }
 
 
-// Main.
+// Main with mono images.
 int main(int argc, char** argv)
 {
+
 	// Initialize network.
 	yarp::os::Network yarp;
 	yarp::os::Node node("/yarp_to_ros");
@@ -323,4 +517,5 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+*/
 
