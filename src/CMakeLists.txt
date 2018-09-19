@@ -9,5 +9,5 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 add_executable(orb_slam stereo_slam.cpp)
 target_link_libraries(orb_slam ${ORB_SLAM2_LIBRARY} ${Pangolin_LIBRARIES} ${YARP_LIBRARIES} ${OpenCV_LIBRARIES})
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ORB_SLAM2/Vocabulary/ORBvoc.txt ${CMAKE_CURRENT_SOURCE_DIR}/config/heicub_stereo.yaml
+file(COPY ${PROJECT_SOURCE_DIR}/third_party/ORB_SLAM2/Vocabulary/ORBvoc.txt ${CMAKE_CURRENT_SOURCE_DIR}/config/heicub_stereo.yaml
     DESTINATION ${PROJECT_SOURCE_DIR}/bin/config)
