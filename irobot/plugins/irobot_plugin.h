@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <vector>
 
+#include "dqn_agent.h"
+#include "read_cams.h"
 #include "keyboard.h"
 
 namespace gazebo
@@ -21,6 +23,8 @@ public:
 	void Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/);	
 	
 	void OnUpdate();
+
+	bool CreateAgent();
 
 	static const uint32_t DOF = 3; // fwd/back, left/right, rotation_left/rotation_right
 
@@ -53,6 +57,8 @@ private:
 	// Keyboard for manual operating mode.
 	Keyboard* keyboard_;
 
+	// Reinforcement learning agent.
+	RLAgent* agent_;
 };
 
 // Register the plugin.
