@@ -1,8 +1,0 @@
-prefix=/home/martin/Documents/path_finding/catkin_ws/devel
-
-Name: beginner_tutorials
-Description: Description of beginner_tutorials
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/martin/Documents/path_finding/catkin_ws/devel/lib 
-Requires: 
