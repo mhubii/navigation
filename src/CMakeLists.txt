@@ -3,13 +3,6 @@ find_package(OpenCV REQUIRED)
 find_package(PCL REQUIRED)
 find_package(ORB_SLAM2 REQUIRED)
 find_package(Pangolin REQUIRED)
-find_package(Protobuf REQUIRED)
-
-find_library(CAFFE2_LIB caffe2)
-
-if(NOT CAFFE2_LIB)
-  message(FATAL_ERROR "Caffe2 lib not found")
-endif()
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/third_party/ORB_SLAM2 
@@ -17,9 +10,6 @@ include_directories(
     ${PCL_INCLUDE_DIRS}
     ${CAFFE2_INCLUDE_DIRS}
 )
-
-add_executable(a3c ${CMAKE_CURRENT_SOURCE_DIR}/a3c.cpp)
-target_link_libraries(a3c ${CAFFE2_LIB} ${PROTOBUF_LIBRARY})
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 add_executable(orb_slam stereo_slam.cpp)
