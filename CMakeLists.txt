@@ -22,10 +22,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utils)
 add_subdirectory(utils)
 
 # Source.
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_subdirectory(src)
 
 # Gazebo plugins.
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/plugins)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/gazebo/plugins)
 add_subdirectory(irobot)
 
