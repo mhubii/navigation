@@ -164,31 +164,4 @@ bool IRobotPlugin::UpdateJoints() {
 
 	return true;
 }
-
-bool IRobotPlugin::CreateAgent() {
-
-	if(agent_ != NULL) {
-	
-		return true;
-	}
-
-	// Create the AI agent.
-	// agent_ = DQNAgent::Create();
-
-	if(!agent_) {
-
-		printf("IRobotPlugin - failed to create AI agent\n");
-		return false;
-	}
-
-	// input_state_ = Tensor::Alloc();
-
-	//if(!input_state_) {
-
-		//printf("IRobotPlugin - failed to allocate %ux%ux%u tensor\n", INPUT_WIDTH, INPUT_HEIGHT, INPUT_CHANNELS);
-	//	return false;
-	//}
-
-	return true;
-};
 } // End of namespace gazebo.

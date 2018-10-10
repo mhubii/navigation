@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <vector>
 
-#include "dqn_agent.h"
 #include "read_cams.h"
 #include "keyboard.h"
 
@@ -56,9 +55,6 @@ private:
 
 	// Keyboard for manual operating mode.
 	Keyboard* keyboard_;
-
-	// Reinforcement learning agent.
-	RLAgent* agent_;
 };
 
 // Register the plugin.
