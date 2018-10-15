@@ -29,7 +29,7 @@ if(NOT CAFFE2_LIB)
   message(FATAL_ERROR "Caffe2 lib not found")
 endif()
 
-add_library(dqn SHARED dqn.cpp)
+add_library(dqn SHARED q_learning.cpp)
 target_link_libraries(dqn ${CAFFE2_LIB} ${PROTOBUF_LIBRARY})
 
 # Test DQN.
