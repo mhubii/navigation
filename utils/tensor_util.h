@@ -12,35 +12,30 @@ class TensorUtil {
 
 public:
 
-	TensorUtil(Tensor<CPUContext>& tensor);
+	TensorUtil(Tensor& tensor);
 
-	void WriteImages(const std::string& name, float mean, bool lossy, int index);
+	void WriteImages(const std::string& name, float mean, bool lossy, int index = 0);
 
-	void WriteImage(const std::string& name, float mean, bool lossy);
+	void WriteImage(const std::string& name, int index, float mean, bool lossy);
 
 	void ReadImages(const std::vector<std::string>& filenames, int width, int height, std::vector<int>& indices, float mean, TensorProto::DataType type);
 
 	void ReadImage(const std::string& filename, int width, int height);	
 
+	void Print(const std::string& name = "", int max = 100);
+
 protected:
 
-	Tensor<CPUContext>& tensor_;
+	Tensor& tensor_;
 
 private:
-	template <typename T> 
-	void ImageToTensor(TensorCPU& tensor, cv::Mat& image, float mean = 128.0);
-
-	template <typename T> 
-	cv::Mat TensorToImage(const Tensor<CPUContext>& tensor, int index, float scale, float mean, int type);
-
-	cv::Mat TensorToImage(const Tensor<CPUContext>& tensor, int index, float scale = 1.0, float mean = 128.0);
 
 	template <typename T>
-	void ReadImageTensor(TensorCPU& tensor, const std::vector<std::string>& filenames, int width, int height, std::vector<int>& indices, float mean, TensorProto::DataType type);
+	void ReadImageTensor(Tensor& tensor, const std::vector<std::string>& filenames, int width, int height, std::vector<int>& indices, float mean, TensorProto::DataType type);
+
+	template <typename T>
+	void TensorPrintType(const Tensor& tensor, const std::string &name, int max);
 };
-
-#include "tensor_util.tpp"
-
 } // End of namespace caffe2.
 
 #endif // TENSOR_UTIL_H_
