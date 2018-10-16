@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
 
     model.to(device);
 
-    torch::Tensor in = torch::ones({1, 3, 64, 64});
+    torch::Tensor in = torch::ones({1, 3, 80, 40});
 
     torch::Tensor out = model.forward(in);
 
