@@ -48,3 +48,10 @@ Run ORB SLAM2 in a new terminal:
 cd bin
 ./orb_slam
 ```
+
+```cpp
+int main() {
+
+ return 0;
+}
+```
