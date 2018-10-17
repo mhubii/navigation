@@ -1,4 +1,5 @@
 #include <torch/torch.h>
+#include <torch/serialize/archive.h>
 
 #include "models.h"
 
@@ -40,6 +41,10 @@ int main(int argc, char** argv) {
     torch::Tensor in = torch::ones({1, 3, 80, 40});
 
     torch::Tensor out = model.forward(in);
+    torch::serialize::OutputArchive archive;
+    model.save(archive);
+    archive.save_to("model.pt");
+
 
     return 0;
 }
