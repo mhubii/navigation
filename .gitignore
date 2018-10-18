@@ -1,0 +1,17 @@
+# Build folder.
+build
+catkin_ws/devel
+catkin_ws/build
+
+# Bin.
+bin
+
+# Visual Studio Code.
+.vscode
+
+# Python cache.
+*/__pycache__
+
+# PyTorch.
+third_party/libtorch
+
