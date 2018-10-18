@@ -4,6 +4,11 @@
 DIR=`dirname $(readlink -f \$0)`
 cd ${DIR}
 
+# Build ORB SLAM2.
+cd third_party/ORB_SLAM2
+sh build.sh
+cd ${DIR}
+
 # Download libtorch.
 if ! [ -d "third_party/libtorch" ]; then
 

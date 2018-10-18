@@ -22,4 +22,4 @@ find_package(Torch REQUIRED)
 
 # Example for Deep Q-Learning.
 add_executable(example_dqn example_dqn.cpp)
-target_link_libraries(example_dqn ${TORCH_LIBRARIES})
+target_link_libraries(example_dqn ${TORCH_LIBRARIES} ${OpenCV_LIBRARIES})
