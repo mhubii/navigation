@@ -33,7 +33,7 @@ private:
 
 	// Operating mode.
 	enum OperatingMode {
-		USER_MANUAL
+		USER_MANUAL,
 		AUTONOMOUSLY
 	} op_mode_;
 
