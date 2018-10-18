@@ -12,6 +12,10 @@
 #define VELOCITY_MIN -10.0f
 #define VELOCITY_MAX  10.0f
 
+#define WORLD_NAME "vehicle_world"
+#define VEHICLE_NAME "vehicle"
+#define GOAL_NAME "goal"
+
 namespace gazebo
 {
 
@@ -19,6 +23,7 @@ VehiclePlugin::VehiclePlugin() :
 	ModelPlugin() {
 
 	op_mode_   = USER_MANUAL;
+	new_state_ = false;
 	vel_delta_ = 1e-3;
 
 	for (int i = 0; i < DOF; i++) {
@@ -44,6 +49,18 @@ void VehiclePlugin::Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/) {
 	ConfigureJoints(R_FRONT_ROLL);
 	ConfigureJoints(L_BACK_ROLL);
 	ConfigureJoints(R_BACK_ROLL);
+
+	// Create Q-Learning agent.
+	if (!CreateAgent()) {
+
+		printf("VehiclePlugin -- failed to create Q-Learning agent\n");
+	}
+
+	// Create a node for camera communication.
+	multi_camera_node_->Init();
+	multi_camera_sub_ = multi_camera_node_->Subscribe("/gazebo/" WORLD_NAME "/" VEHICLE_NAME "/chassis/stereo_camera/images", &VehiclePlugin::OnCameraMsg, this);
+
+	// Create a node for collision detection.
 
 	// Listen to the update event. This event is broadcast every simulation iterartion.
 	this->update_connection = event::Events::ConnectWorldUpdateBegin(std::bind(&VehiclePlugin::OnUpdate, this));
@@ -97,6 +114,45 @@ void VehiclePlugin::OnUpdate() {
 		joints_[7]->SetAxis(0, tmp);
 		joints_[7]->SetVelocity(0, vel_[2]);
 	}
+}
+
+void VehiclePlugin::OnCameraMsg(ConstImageStampedPtr &msg) {
+
+	if (!msg) {
+
+		printf("VehiclePlugin -- received NULL message\n");
+		return;
+	}
+
+	const int width = msg->image().width();
+	const int height = msg->image().height();
+	const int bpp = (msg->image().step()/msg->image().width())*8; // Bits per pixel.
+	const int size = msg->image().data().size();
+
+	if (bpp != 24) {
+
+		printf("VehiclePlugin -- expected 24 bits per pixel uchar3 image from camera, got %i\n", bpp);
+		return;
+	}
+
+	// 
+	printf("Got an image of size: %ix%i", height, width);
+	
+	new_state_ = true;
+}
+
+void VehiclePlugin::OnCollisionMsg(ConstContactsPtr &contacts) {
+
+}
+
+bool VehiclePlugin::CreateAgent() {
+
+	return true;
+}
+
+bool VehiclePlugin::UpdateAgent() {
+
+	return true;
 }
 
 bool VehiclePlugin::ConfigureJoints(const char* name) {
@@ -160,8 +216,20 @@ bool VehiclePlugin::UpdateJoints() {
 			}
 		}
 
+		return true;
+	}
+	else if (op_mode_ == AUTONOMOUSLY) {
+
+
+		// No new processed state.
+		new_state_ = false;
+
+		if (UpdateAgent()) {
+			
+			return true;
+		}
 	}
 
-	return true;
+	return false;
 }
 } // End of namespace gazebo.

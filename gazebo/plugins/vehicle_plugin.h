@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "keyboard.h"
+#include "q_learning.h"
 
 namespace gazebo
 {
@@ -21,8 +22,8 @@ public:
 	void Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/);	
 	
 	void OnUpdate();
-
-	bool CreateAgent();
+	void OnCameraMsg(ConstImageStampedPtr &msg);
+	void OnCollisionMsg(ConstContactsPtr &contacts);
 
 	static const uint32_t DOF = 3; // fwd/back, left/right, rotation_left/rotation_right
 
@@ -37,6 +38,12 @@ private:
 		AUTONOMOUSLY
 	} op_mode_;
 
+	// Agent.
+	bool CreateAgent();
+	bool UpdateAgent();
+
+	bool new_state_; // True if new frame need to be processed.
+
 	// Initialize joints.
 	bool ConfigureJoints(const char* name);
 
@@ -49,6 +56,14 @@ private:
 	event::ConnectionPtr update_connection;	
 
 	std::vector<physics::JointPtr> joints_;
+
+	// Multi camera node and subscriber.
+	gazebo::transport::NodePtr multi_camera_node_;
+	gazebo::transport::SubscriberPtr multi_camera_sub_;
+
+	// Collision node and subscriber.
+	gazebo::transport::NodePtr collision_node_;
+	gazebo::transport::SubscriberPtr collision_sub_;
 
 	// Incremental velocity change.
 	double vel_delta_;

@@ -1,13 +1,12 @@
 # Keyboard input user navigation.
 add_library(keyboard SHARED keyboard.cpp)
 
-# Deep Q-Learning.
+# Q-Learning.
 find_package(Torch REQUIRED)
+find_package(OpenCV REQUIRED)
 
-#set(SOURCE)
-
-#add_library(dqn SHARED ${SOURCE})
-#target_link_libraries(dqn ${TORCH_LIBRARIES})
+add_library(q_learning SHARED q_learning.cpp)
+target_link_libraries(q_learning ${TORCH_LIBRARIES} ${OpenCV_LIBRARIES})
 
 # Example for Deep Q-Learning.
 add_executable(example_dqn example_dqn.cpp)
