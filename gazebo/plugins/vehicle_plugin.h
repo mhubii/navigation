@@ -1,5 +1,5 @@
-#ifndef GAZEBO_IROBOT_PLUGIN_H_
-#define GAZEBO_IROBOT_PLUGIN_H_
+#ifndef GAZEBO_VEHICLE_PLUGIN_H_
+#define GAZEBO_VEHICLE_PLUGIN_H_
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <vector>
 
-#include "read_cams.h"
 #include "keyboard.h"
 
 namespace gazebo
@@ -35,6 +34,7 @@ private:
 	// Operating mode.
 	enum OperatingMode {
 		USER_MANUAL
+		AUTONOMOUSLY
 	} op_mode_;
 
 	// Initialize joints.
