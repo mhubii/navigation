@@ -1,0 +1,15 @@
+# Build folder.
+build
+
+# Bin.
+bin
+
+# Visual Studio Code.
+.vscode
+
+# Python cache.
+*/__pycache__
+
+# PyTorch.
+third_party/libtorch
+
