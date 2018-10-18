@@ -21,21 +21,22 @@ namespace gazebo
 
 VehiclePlugin::VehiclePlugin() :
 	ModelPlugin() {
-
+printf("hay2\n");
 	op_mode_   = USER_MANUAL;
-	new_state_ = false;
+	//new_state_ = false;
 	vel_delta_ = 1e-3;
-
+printf("hay6\n");
 	for (int i = 0; i < DOF; i++) {
 	
 		vel_[i] = 0.;
 	}
-
+printf("hay7\n");
 	keyboard_ = Keyboard::Create();
+	printf("hay8\n");
 }
 
 void VehiclePlugin::Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/) {
-	
+	printf("hay9\n");
 	// Store the pointer to the model.
 	this->model = parent;
 
@@ -51,14 +52,14 @@ void VehiclePlugin::Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/) {
 	ConfigureJoints(R_BACK_ROLL);
 
 	// Create Q-Learning agent.
-	if (!CreateAgent()) {
+	//if (!CreateAgent()) {
 
-		printf("VehiclePlugin -- failed to create Q-Learning agent\n");
-	}
+	//	printf("VehiclePlugin -- failed to create Q-Learning agent\n");
+	//}
 
 	// Create a node for camera communication.
-	multi_camera_node_->Init();
-	multi_camera_sub_ = multi_camera_node_->Subscribe("/gazebo/" WORLD_NAME "/" VEHICLE_NAME "/chassis/stereo_camera/images", &VehiclePlugin::OnCameraMsg, this);
+	//multi_camera_node_->Init();
+	//multi_camera_sub_ = multi_camera_node_->Subscribe("/gazebo/" WORLD_NAME "/" VEHICLE_NAME "/chassis/stereo_camera/images", &VehiclePlugin::OnCameraMsg, this);
 
 	// Create a node for collision detection.
 
@@ -67,7 +68,7 @@ void VehiclePlugin::Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/) {
 }
 
 void VehiclePlugin::OnUpdate() {
-
+printf("hay3\n");
 	if (UpdateJoints()) {
 
 		for(int i = 0; i < DOF; i++) {
@@ -115,7 +116,7 @@ void VehiclePlugin::OnUpdate() {
 		joints_[7]->SetVelocity(0, vel_[2]);
 	}
 }
-
+/*
 void VehiclePlugin::OnCameraMsg(ConstImageStampedPtr &msg) {
 
 	if (!msg) {
@@ -150,13 +151,14 @@ bool VehiclePlugin::CreateAgent() {
 	return true;
 }
 
+
 bool VehiclePlugin::UpdateAgent() {
 
 	return true;
 }
-
+*/
 bool VehiclePlugin::ConfigureJoints(const char* name) {
-
+printf("hay4\n");
 	std::vector<physics::JointPtr> joints = model->GetJoints();
 	const size_t num_joints = joints.size();
 
@@ -175,7 +177,7 @@ bool VehiclePlugin::ConfigureJoints(const char* name) {
 }
 
 bool VehiclePlugin::UpdateJoints() {
-
+printf("hay5\n");
 	if (op_mode_ == USER_MANUAL) {
 
 		keyboard_->Poll();
@@ -222,12 +224,12 @@ bool VehiclePlugin::UpdateJoints() {
 
 
 		// No new processed state.
-		new_state_ = false;
+		//new_state_ = false;
 
-		if (UpdateAgent()) {
+		//if (UpdateAgent()) {
 			
-			return true;
-		}
+		//	return true;
+		//}
 	}
 
 	return false;
