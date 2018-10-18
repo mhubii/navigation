@@ -220,7 +220,7 @@ printf("hay5\n");
 
 		return true;
 	}
-	else if (op_mode_ == AUTONOMOUSLY) {
+	//else if (op_mode_ == AUTONOMOUSLY) {
 
 
 		// No new processed state.
@@ -230,7 +230,7 @@ printf("hay5\n");
 			
 		//	return true;
 		//}
-	}
+	//}
 
 	return false;
 }

@@ -34,8 +34,7 @@ private:
 
 	// Operating mode.
 	enum OperatingMode {
-		USER_MANUAL,
-		AUTONOMOUSLY
+		USER_MANUAL
 	} op_mode_;
 
 	// Agent.
