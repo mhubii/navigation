@@ -6,7 +6,7 @@ Install yarp as shown here http://www.yarp.it/install.html.
 Install gazebo as shown here http://gazebosim.org/tutorials?tut=install_ubuntu.
 Install gazebo-yarp-plugins as shown here http://robotology.gitlab.io/docs/gazebo-yarp-plugins/master/install.html.
 
-Add the irobot to the GAZEBO_MODEL_PATH environment variable. In your bashrc add the line:
+Add the vehicle to the GAZEBO_MODEL_PATH environment variable. In your bashrc add the line:
 
 ```
 export GAZEBO_MODEL_PATH=${GAZEBO_MODEL_PATH}:<location to path_finding>/path_finding
@@ -35,7 +35,7 @@ Start the yarpserver. In a terminal tipe:
 yarpserver --write
 ```
 
-Open gazebo with root access so that the irobot plugin can be used to steer the robot with W/A/S/D/LEFT/RIGHT. In another terminal type:
+Open gazebo with root access so that the vehicle plugin can be used to steer the robot with W/A/S/D/LEFT/RIGHT. In another terminal type:
 
 ```
 sudo -s

@@ -14,10 +14,10 @@
 namespace gazebo
 {
 
-class IRobotPlugin : public ModelPlugin
+class VehiclePlugin : public ModelPlugin
 {
 public:
-	IRobotPlugin();
+	VehiclePlugin();
 
 	void Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/);	
 	
@@ -58,7 +58,7 @@ private:
 };
 
 // Register the plugin.
-GZ_REGISTER_MODEL_PLUGIN(IRobotPlugin)
+GZ_REGISTER_MODEL_PLUGIN(VehiclePlugin)
 }
 
 #endif
