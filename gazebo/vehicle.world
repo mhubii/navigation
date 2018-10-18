@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sdf version="1.6">
-<world name="irobot_world">
+<world name="vehicle_world">
 
 <!-- Sun -->
 <include>
@@ -14,7 +14,7 @@
 
 <!-- iRobot -->
 <include>
-  <uri>model://irobot</uri>
+  <uri>model://vehicle</uri>
 </include>
 
 </world>

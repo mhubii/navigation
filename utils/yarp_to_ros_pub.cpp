@@ -433,12 +433,12 @@ int main(int argc, char** argv)
 
 	// Initialize threads.
 	std::vector<std::string> locals = {"/client/cam/left", "/client/cam/right"};
-	std::vector<std::string> remotes = {"/irobot/cam/left", "/irobot/cam/right"};
+	std::vector<std::string> remotes = {"/vehicle/cam/left", "/vehicle/cam/right"};
 	std::vector<std::string> topics = {"/cam0/image_raw", "/cam1/image_raw"};
 
 	
 	s_cam = new YarpToRosStereoImg(10, locals, remotes, topics);
-	imu = new YarpToRosImu(10, "/client/inertial", "/irobot/inertial", "/imu0");
+	imu = new YarpToRosImu(10, "/client/inertial", "/vehicle/inertial", "/imu0");
 
 	s_cam->start();
 	imu->start();
@@ -496,9 +496,9 @@ int main(int argc, char** argv)
 	sigaction(SIGINT, &sigIntHandler, NULL);
 
 	// Initialize threads.
-	l_cam = new YarpToRosImg(10, "/client/cam/left", "/irobot/cam/left", "/cam0/image_raw");
-	r_cam = new YarpToRosImg(10, "/client/cam/right", "/irobot/cam/right", "/cam1/image_raw");
-	imu = new YarpToRosImu(10, "/client/inertial", "/irobot/inertial", "/imu0");
+	l_cam = new YarpToRosImg(10, "/client/cam/left", "/vehicle/cam/left", "/cam0/image_raw");
+	r_cam = new YarpToRosImg(10, "/client/cam/right", "/vehicle/cam/right", "/cam1/image_raw");
+	imu = new YarpToRosImu(10, "/client/inertial", "/vehicle/inertial", "/imu0");
 
 	l_cam->start();
 	r_cam->start();

@@ -194,7 +194,7 @@ int main(int argc, char** argv)
 	yarp::os::Network yarp;
 
 	std::vector<std::string> locals = {"/client/cam/left", "/client/cam/right"};
-	std::vector<std::string> remotes = {"/irobot/cam/left", "/irobot/cam/right"};
+	std::vector<std::string> remotes = {"/vehicle/cam/left", "/vehicle/cam/right"};
 
 	// Device driver and options.
 	std::vector<yarp::dev::PolyDriver*> pds(locals.size());
@@ -328,7 +328,7 @@ int main(int argc, char** argv)
 	std::string vocab = "config/ORBvoc.txt";
 	std::string config = "config/heicub_rgbd.yaml";
 	std::vector<std::string> locals = {"/client/cam/left", "/client/cam/right"};
-	std::vector<std::string> remotes = {"/irobot/cam/left", "/irobot/cam/right"};
+	std::vector<std::string> remotes = {"/vehicle/cam/left", "/vehicle/cam/right"};
 	
 	slam = new ORBSlam(period, vocab, config, locals, remotes);
 

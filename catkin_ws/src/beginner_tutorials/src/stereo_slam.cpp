@@ -299,7 +299,7 @@ int main(int argc, char** argv)
 	std::string vocab = "/home/martin/Documents/path_finding/bin/config/ORBvoc.txt";
 	std::string config = "/home/martin/Documents/path_finding/bin/config/heicub_stereo.yaml";
 	std::vector<std::string> locals = {"/client/cam/left", "/client/cam/right"};
-	std::vector<std::string> remotes = {"/irobot/cam/left", "/irobot/cam/right"};
+	std::vector<std::string> remotes = {"/vehicle/cam/left", "/vehicle/cam/right"};
 	
 	slam = new ORBSlam(period, vocab, config, locals, remotes);
 
@@ -316,7 +316,7 @@ int main(int argc, char** argv)
 	std::string vocab = "/home/martin/Documents/path_finding/bin/config/ORBvoc.txt";
 	std::string config = "/home/martin/Documents/path_finding/bin/config/heicub_stereo.yaml";
 	std::vector<std::string> locals = {"/client/cam/left", "/client/cam/right"};
-	std::vector<std::string> remotes = {"/irobot/cam/left", "/irobot/cam/right"};
+	std::vector<std::string> remotes = {"/vehicle/cam/left", "/vehicle/cam/right"};
 
 	// Device driver and options.
 	std::vector<yarp::dev::PolyDriver*> pds(2);

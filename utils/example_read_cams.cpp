@@ -6,7 +6,7 @@ int main(int argc, char** argv) {
 	yarp::os::Network yarp;
 
 	std::vector<std::string> locals = {"/client/cam/left", "/client/cam/right"};
-	std::vector<std::string> remotes = {"/irobot/cam/left", "/irobot/cam/right"};
+	std::vector<std::string> remotes = {"/vehicle/cam/left", "/vehicle/cam/right"};
 
 	ReadCams read_cams(locals, remotes);
 
