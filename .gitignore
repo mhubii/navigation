@@ -10,6 +10,4 @@ bin
 # Python cache.
 */__pycache__
 
-# PyTorch.
-third_party/libtorch
 
