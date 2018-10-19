@@ -12,7 +12,7 @@
 #define VELOCITY_MIN -10.0f
 #define VELOCITY_MAX  10.0f
 
-#define WORLD_NAME "vehicle_world"
+#define WORLD_NAME "default" // To change later.
 #define VEHICLE_NAME "vehicle"
 #define GOAL_NAME "goal"
 
@@ -20,23 +20,22 @@ namespace gazebo
 {
 
 VehiclePlugin::VehiclePlugin() :
-	ModelPlugin() {
-printf("hay2\n");
+	ModelPlugin(), multi_camera_node_(new gazebo::transport::Node()), collision_node_(new gazebo::transport::Node()) {
+
 	op_mode_   = USER_MANUAL;
-	//new_state_ = false;
+	new_state_ = false;
 	vel_delta_ = 1e-3;
-printf("hay6\n");
+
 	for (int i = 0; i < DOF; i++) {
 	
 		vel_[i] = 0.;
 	}
-printf("hay7\n");
+
 	keyboard_ = Keyboard::Create();
-	printf("hay8\n");
 }
 
 void VehiclePlugin::Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/) {
-	printf("hay9\n");
+
 	// Store the pointer to the model.
 	this->model = parent;
 
@@ -52,15 +51,15 @@ void VehiclePlugin::Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/) {
 	ConfigureJoints(R_BACK_ROLL);
 
 	// Create Q-Learning agent.
-	//if (!CreateAgent()) {
+	if (!CreateAgent()) {
 
-	//	printf("VehiclePlugin -- failed to create Q-Learning agent\n");
-	//}
+		printf("VehiclePlugin -- failed to create Q-Learning agent\n");
+	}
 
 	// Create a node for camera communication.
-	//multi_camera_node_->Init();
-	//multi_camera_sub_ = multi_camera_node_->Subscribe("/gazebo/" WORLD_NAME "/" VEHICLE_NAME "/chassis/stereo_camera/images", &VehiclePlugin::OnCameraMsg, this);
-
+	multi_camera_node_->Init();
+	multi_camera_sub_ = multi_camera_node_->Subscribe("/gazebo/" WORLD_NAME "/" VEHICLE_NAME "/chassis/stereo_camera/images", &VehiclePlugin::OnCameraMsg, this);
+	
 	// Create a node for collision detection.
 
 	// Listen to the update event. This event is broadcast every simulation iterartion.
@@ -68,7 +67,7 @@ void VehiclePlugin::Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/) {
 }
 
 void VehiclePlugin::OnUpdate() {
-printf("hay3\n");
+
 	if (UpdateJoints()) {
 
 		for(int i = 0; i < DOF; i++) {
@@ -116,8 +115,8 @@ printf("hay3\n");
 		joints_[7]->SetVelocity(0, vel_[2]);
 	}
 }
-/*
-void VehiclePlugin::OnCameraMsg(ConstImageStampedPtr &msg) {
+
+void VehiclePlugin::OnCameraMsg(ConstImagesStampedPtr &msg) {
 
 	if (!msg) {
 
@@ -125,10 +124,10 @@ void VehiclePlugin::OnCameraMsg(ConstImageStampedPtr &msg) {
 		return;
 	}
 
-	const int width = msg->image().width();
-	const int height = msg->image().height();
-	const int bpp = (msg->image().step()/msg->image().width())*8; // Bits per pixel.
-	const int size = msg->image().data().size();
+	const int width = msg->image()[0].width();
+	const int height = msg->image()[0].height();
+	const int bpp = (msg->image()[0].step()/msg->image()[0].width())*8; // Bits per pixel.
+	const int size = msg->image()[0].data().size();
 
 	if (bpp != 24) {
 
@@ -136,8 +135,14 @@ void VehiclePlugin::OnCameraMsg(ConstImageStampedPtr &msg) {
 		return;
 	}
 
-	// 
-	printf("Got an image of size: %ix%i", height, width);
+	//cv::Mat mat(height, width, CV_8UC3);
+	//memcpy(mat.data, msg->image()[0].data().c_str(), size);
+
+	//std::cout << mat << std::endl;
+    
+	//cv::namedWindow("img");
+	//cv::destroyWindow("img");
+	//cv::waitKey(0);
 	
 	new_state_ = true;
 }
@@ -156,9 +161,9 @@ bool VehiclePlugin::UpdateAgent() {
 
 	return true;
 }
-*/
+
 bool VehiclePlugin::ConfigureJoints(const char* name) {
-printf("hay4\n");
+
 	std::vector<physics::JointPtr> joints = model->GetJoints();
 	const size_t num_joints = joints.size();
 
@@ -177,7 +182,7 @@ printf("hay4\n");
 }
 
 bool VehiclePlugin::UpdateJoints() {
-printf("hay5\n");
+
 	if (op_mode_ == USER_MANUAL) {
 
 		keyboard_->Poll();
@@ -220,17 +225,17 @@ printf("hay5\n");
 
 		return true;
 	}
-	//else if (op_mode_ == AUTONOMOUSLY) {
+	else if (op_mode_ == AUTONOMOUSLY) {
 
 
 		// No new processed state.
-		//new_state_ = false;
+		new_state_ = false;
 
-		//if (UpdateAgent()) {
+		if (UpdateAgent()) {
 			
-		//	return true;
-		//}
-	//}
+			return true;
+		}
+	}
 
 	return false;
 }

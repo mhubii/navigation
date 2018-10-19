@@ -2,9 +2,6 @@
 add_library(keyboard SHARED keyboard.cpp)
 
 # Q-Learning.
-find_package(Torch REQUIRED)
-find_package(OpenCV REQUIRED)
-
 add_library(q_learning SHARED q_learning.cpp)
 target_link_libraries(q_learning ${TORCH_LIBRARIES} ${OpenCV_LIBRARIES})
 
