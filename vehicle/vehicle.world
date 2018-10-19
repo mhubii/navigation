@@ -12,7 +12,7 @@
   <uri>model://ground_plane</uri>
 </include>
 
-<!-- iRobot -->
+<!-- Vehicle -->
 <include>
   <uri>model://vehicle</uri>
 </include>
