@@ -40,10 +40,10 @@
       </geometry>
     </visual>
 
-<!-- Stereocamera -->
+    <!-- Stereocamera -->
     <sensor type="multicamera" name="stereo_camera">
       <pose>.3 0 .15 0 0 0</pose>
-      <visualize>true</visualize> <!-- seems to bug -->
+      <visualize>true</visualize>
       <always_on>1</always_on>
       <update_rate>30</update_rate>
 
@@ -225,6 +225,62 @@
 
   <link name="r_back_wheel_virtual">
     <pose>-.2 -.21 0 0 0 0</pose>
+  </link>
+
+  <!-- Obstacle -->
+  <link name="obstacle">
+    <pose>2 0 0 0 0 0</pose>
+    
+    <collision name="collision">
+      <geometry>
+        <box>
+          <size>0.4 0.4 0.4</size>
+        </box>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <box>
+          <size>0.4 0.4 0.4</size>
+        </box>
+      </geometry>
+      <material>
+        <script>
+          <uri>model://vehicle/materials/scripts</uri>
+          <uri>model://vehicle/materials/textures</uri>
+          <name>vehicle/obstacle</name>
+        </script>
+      </material>
+    </visual>
+  </link>
+
+  <!-- Goal -->
+  <link name="goal">
+    <pose>4 0 0 0 0 0</pose>
+    
+    <collision name="collision">
+      <geometry>
+        <sphere>
+          <radius>0.4</radius>
+        </sphere>
+      </geometry>
+    </collision>
+
+    <visual name="visual">
+      <geometry>
+        <sphere>
+          <radius>0.4</radius>
+        </sphere>
+      </geometry>
+      <material>
+        <script>
+          <uri>model://vehicle/materials/scripts</uri>
+          <uri>model://vehicle/materials/textures</uri>
+          <name>vehicle/goal</name>
+        </script>
+      </material>
+    </visual>
   </link>
 
   <joint type="revolute" name="l_front_wheel_pitch">
