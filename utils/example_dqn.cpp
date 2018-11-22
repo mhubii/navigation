@@ -36,11 +36,17 @@ int main(int argc, char** argv) {
 
     DQN model;
 
-    model.to(device);
+    model.to(torch::kCUDA);
 
-    torch::Tensor in = torch::ones({1, 3, 80, 40});
+    torch::Tensor in = torch::ones({1, 3, 320, 240}, device);
 
-    torch::Tensor out = model.forward(in);
+    std::cout << in.is_cuda() << std::endl;
+
+    for (int i = 0; i < 1000; i++) {
+
+        std::cout << i << std::endl;    ;
+        torch::Tensor out = model.forward(in);
+    }
     torch::serialize::OutputArchive archive;
     model.save(archive);
     archive.save_to("model.pt");

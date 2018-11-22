@@ -12,9 +12,19 @@
   <uri>model://ground_plane</uri>
 </include>
 
+<!-- Goal -->
+<include>
+  <uri>model://goal</uri>
+</include>
+
 <!-- Vehicle -->
 <include>
   <uri>model://vehicle</uri>
+</include>
+
+<!-- Obstacle -->
+<include>
+  <uri>model://obstacle</uri>
 </include>
 
 </world>

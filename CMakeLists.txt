@@ -6,6 +6,8 @@ find_package(Torch REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(gazebo REQUIRED)
 
+include_directories(${Torch_INCLUDE_DIRS})
+include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${GAZEBO_INCLUDE_DIRS})
 link_directories(${GAZEBO_LIBRARY_DIRS})
 list(APPEND CMAKE_CXX_FLAGS "${GAZEBO_CXX_FLAGS}")
@@ -18,7 +20,7 @@ add_subdirectory(utils)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_subdirectory(src)
 
-# Gazebo plugins.
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/vehicle/plugins)
+# Gazebo models.
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/world/vehicle/plugins)
 add_subdirectory(vehicle)
 

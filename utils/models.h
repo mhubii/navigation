@@ -27,7 +27,16 @@ class DQN : public Model {
               bn2_(32),
               conv3_(torch::nn::Conv2dOptions(32, 32, 5).stride(2)),
               bn3_(32),
-              fc1_(448, 6) {    }
+              fc1_(448, 6) {
+
+            register_module("conv1", conv1_);
+            register_module("bn1", bn1_);
+            register_module("conv2", conv2_);
+            register_module("bn2", bn2_);
+            register_module("conv3", conv3_);
+            register_module("bn3", bn3_);
+            register_module("fc1", fc1_);
+        }
 
         // Forward pass.
         torch::Tensor forward(torch::Tensor x) {
@@ -38,7 +47,7 @@ class DQN : public Model {
             x = torch::relu(bn3_->forward(conv3_->forward(x)));
 
             // Fully connected layer.
-            x = fc1_->forward(torch::flatten(x));
+            //x = fc1_->forward(torch::flatten(x));
 
             return x;
         }

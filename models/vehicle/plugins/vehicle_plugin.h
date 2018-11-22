@@ -9,7 +9,9 @@
 #include <vector>
 
 #include "keyboard.h"
-#include "q_learning.h"
+//#include "q_learning.h"
+#include "models.h"
+#include <torch/torch.h>
 
 namespace gazebo
 {
@@ -70,6 +72,10 @@ private:
 
 	// Keyboard for manual operating mode.
 	Keyboard* keyboard_;
+
+	//TMP
+	torch::Device device_;
+	DQN model_;
 };
 
 // Register the plugin.

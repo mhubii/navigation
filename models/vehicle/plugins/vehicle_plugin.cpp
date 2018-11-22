@@ -15,12 +15,28 @@
 #define WORLD_NAME "default" // To change later.
 #define VEHICLE_NAME "vehicle"
 #define GOAL_NAME "goal"
+#define COLLISION_FILTER "ground_plane::link::collision"
 
 namespace gazebo
 {
 
+//TMP
+struct Options {
+
+    std::string data_root{"data"};
+    int32_t batch_size{64};
+    int32_t epochs{10};
+    double lr{0.01};
+    double momentum{0.5};
+    bool no_cuda{false};
+    int32_t seed{1};
+    int32_t test_batch_size{1000};
+    int32_t log_interval{10};
+};
+
+
 VehiclePlugin::VehiclePlugin() :
-	ModelPlugin(), multi_camera_node_(new gazebo::transport::Node()), collision_node_(new gazebo::transport::Node()) {
+	ModelPlugin(), multi_camera_node_(new gazebo::transport::Node()), collision_node_(new gazebo::transport::Node()), device_(torch::kCUDA) {
 
 	op_mode_   = USER_MANUAL;
 	new_state_ = false;
@@ -32,6 +48,11 @@ VehiclePlugin::VehiclePlugin() :
 	}
 
 	keyboard_ = Keyboard::Create();
+
+	//TMP
+    Options options;
+
+	model_.to(device_);
 }
 
 void VehiclePlugin::Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/) {
@@ -61,6 +82,8 @@ void VehiclePlugin::Load(physics::ModelPtr parent, sdf::ElementPtr /*sdf*/) {
 	multi_camera_sub_ = multi_camera_node_->Subscribe("/gazebo/" WORLD_NAME "/" VEHICLE_NAME "/chassis/stereo_camera/images", &VehiclePlugin::OnCameraMsg, this);
 	
 	// Create a node for collision detection.
+	collision_node_->Init();
+	collision_sub_ = collision_node_->Subscribe("/gazebo/" WORLD_NAME "/" VEHICLE_NAME "/chassis/chassis_contact", &VehiclePlugin::OnCollisionMsg, this);
 
 	// Listen to the update event. This event is broadcast every simulation iterartion.
 	this->update_connection = event::Events::ConnectWorldUpdateBegin(std::bind(&VehiclePlugin::OnUpdate, this));
@@ -124,31 +147,83 @@ void VehiclePlugin::OnCameraMsg(ConstImagesStampedPtr &msg) {
 		return;
 	}
 
-	const int width = msg->image()[0].width();
-	const int height = msg->image()[0].height();
-	const int bpp = (msg->image()[0].step()/msg->image()[0].width())*8; // Bits per pixel.
-	const int size = msg->image()[0].data().size();
+	const int l_width = msg->image()[0].width();
+	const int l_height = msg->image()[0].height();
+	const int l_bpp = (msg->image()[0].step()/msg->image()[0].width())*8; // Bits per pixel.
+	const int l_size = msg->image()[0].data().size();
 
-	if (bpp != 24) {
+	if (l_bpp != 24) {
 
-		printf("VehiclePlugin -- expected 24 bits per pixel uchar3 image from camera, got %i\n", bpp);
+		printf("VehiclePlugin -- expected 24 bits per pixel uchar3 image from camera, got %i\n", l_bpp);
 		return;
 	}
 
-	//cv::Mat mat(height, width, CV_8UC3);
-	//memcpy(mat.data, msg->image()[0].data().c_str(), size);
+	torch::Tensor l_img = torch::zeros({1, 3, l_height, l_width}, device_);
 
-	//std::cout << mat << std::endl;
-    
-	//cv::namedWindow("img");
-	//cv::destroyWindow("img");
-	//cv::waitKey(0);
+	// memcpy(l_img.data_ptr(), msg->image()[0].data().c_str(), l_size);
+
+	// cv::Mat cv_l_img(l_height, l_width, CV_8UC3);
+	// memcpy(cv_l_img.data, l_img.data_ptr(), l_size);
+
+	//std::cout << cv_l_img << std::endl;
+
+	model_.forward(l_img);
+
+	const int r_width = msg->image()[1].width();
+	const int r_height = msg->image()[1].height();
+	const int r_bpp = (msg->image()[1].step()/msg->image()[0].width())*8; // Bits per pixel.
+	const int r_size = msg->image()[1].data().size();
+
+	if (r_bpp != 24) {
+
+		printf("VehiclePlugin -- expected 24 bits per pixel uchar3 image from camera, got %i\n", r_bpp);
+		return;
+	}
+
+	cv::Mat r_img(r_height, r_width, CV_8UC3);
+	memcpy(r_img.data, msg->image()[1].data().c_str(), r_size);	
 	
 	new_state_ = true;
 }
 
-void VehiclePlugin::OnCollisionMsg(ConstContactsPtr &contacts) {
+void VehiclePlugin::OnCollisionMsg(ConstContactsPtr &contacts)
+{
+	for (unsigned int i = 0; i < contacts->contact_size(); ++i)
+	{
+		if( strcmp(contacts->contact(i).collision2().c_str(), COLLISION_FILTER) == 0 )
+			continue;
 
+		std::cout << "Collision between[" << contacts->contact(i).collision1()
+			     << "] and [" << contacts->contact(i).collision2() << "]\n";
+
+
+		for (unsigned int j = 0; j < contacts->contact(i).position_size(); ++j)
+		{
+			 std::cout << j << "  Position:"
+					 << contacts->contact(i).position(j).x() << " "
+					 << contacts->contact(i).position(j).y() << " "
+					 << contacts->contact(i).position(j).z() << "\n";
+			 std::cout << "   Normal:"
+					 << contacts->contact(i).normal(j).x() << " "
+					 << contacts->contact(i).normal(j).y() << " "
+					 << contacts->contact(i).normal(j).z() << "\n";
+			 std::cout << "   Depth:" << contacts->contact(i).depth(j) << "\n";
+		}
+
+		// issue learning reward
+		// if( opMode == AGENT_LEARN )
+		// {
+		// 	#define GOAL_COLLISION "goal::link::box_collision"
+
+		// 	bool hitTarget = (strcmp(contacts->contact(i).collision2().c_str(), GOAL_COLLISION) == 0) ||
+		// 				  (strcmp(contacts->contact(i).collision1().c_str(), GOAL_COLLISION) == 0);
+
+		// 	rewardHistory = hitTarget ? REWARD_WIN : REWARD_LOSS;
+
+		// 	newReward  = true;
+		// 	endEpisode = true;
+		// }
+	}
 }
 
 bool VehiclePlugin::CreateAgent() {
