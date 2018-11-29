@@ -1,5 +1,7 @@
 # Path Finding
 
+This folder is currently under construction!
+
 ## Building
 ### Build Dependencies
 Install yarp as shown here http://www.yarp.it/install.html.
