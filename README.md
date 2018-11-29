@@ -1,4 +1,4 @@
-# Path Finding
+# Navigation
 
 This folder is currently under construction!
 
