@@ -5,7 +5,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 
-from model import CNN
+from model import StereoCNN
 import utils
 
 
@@ -26,7 +26,6 @@ def train():
     # Load, pre-process and augment data.
     data_set = utils.DataSetGenerator(data_dir=args.data_dir,
                                       transform=transforms.Compose([
-                                          utils.AugmentData(),
                                           utils.PreProcessData(),
                                           utils.ToTensor()
                                       ]))
@@ -35,7 +34,7 @@ def train():
     data_loader = DataLoader(data_set, batch_size=args.batch_size, drop_last=True)
 
     # Build model.
-    model = CNN(utils.INPUT_SHAPE, args.batch_size)
+    model = StereoCNN(utils.INPUT_SHAPE, 3, args.batch_size)
 
     # Loss and optimizer.
     criterion = nn.MSELoss()
@@ -46,23 +45,24 @@ def train():
 
     for epoch in range(args.epochs):
         for idx, sample in enumerate(data_loader):
-            img = Variable(sample['img'])
-            steering_angle = Variable(sample['steering_angle'])
+            img_left = Variable(sample['img_left'])
+            img_right = Variable(sample['img_right'])
+            vel = Variable(sample['vel'])
             optimizer.zero_grad()
-            steering_angle_out = model(img)
-            loss = criterion(steering_angle_out, steering_angle)
+            vel_out = model(img_left, img_right)
+            loss = criterion(vel_out, vel)
             loss.backward()
             optimizer.step()
 
             # Save weights.
-            if loss.data[0] < best_loss:
-                best_loss = loss.data[0]
+            if loss.data.item() < best_loss:
+                best_loss = loss.data.item()
                 torch.save(model.state_dict(), 'train.pth')
 
-            if idx % 100 == 0:
+            if idx % 10 == 0:
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    epoch, idx * len(img), len(data_loader.dataset),
-                    100. * idx / len(data_loader), loss.data[0]))
+                      epoch, idx * len(img_left), len(data_loader.dataset),
+                      100. * idx / len(data_loader), loss.data.item()))
 
 
 if __name__ == '__main__':

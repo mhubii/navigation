@@ -16,8 +16,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
 # Sources.
 set(NAVIGATION_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(NAVIGATION_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include/navigation)
-set(NAVIGATION_SRCS ${NAVIGATION_SRC_DIR}/keyboard.cpp)
-set(NAVIGATION_INCLUDES ${NAVIGATION_INCLUDE_DIR}/keyboard.h)
+list(APPEND NAVIGATION_SRCS ${NAVIGATION_SRC_DIR}/keyboard.cpp)
+list(APPEND NAVIGATION_INCLUDES ${NAVIGATION_INCLUDE_DIR}/navigation.h ${NAVIGATION_INCLUDE_DIR}/keyboard.h)
 
 # Optional.
 if (${BUILD_WITH_TORCH})
@@ -30,7 +30,7 @@ if (${BUILD_WITH_TORCH})
 
   list(APPEND NAVIGATION_SRCS ${NAVIGATION_SRC_DIR}/q_learning.cpp)
   list(APPEND NAVIGATION_INCLUDES ${NAVIGATION_INCLUDE_DIR}/q_learning.h)
-  list(APPEND NAVIGATION_LIBS ${TORCH_LIBRARIES} ${OpenCV_LIBRARIES})
+  list(APPEND NAVIGATION_LIBRARIES ${TORCH_LIBRARIES} ${OpenCV_LIBRARIES})
 
 endif()
 
@@ -42,7 +42,7 @@ endif()
 
 # Add navigation library.
 add_library(navigation SHARED ${NAVIGATION_SRCS})
-target_link_libraries(navigation ${NAVIGATION_LIBS})
+target_link_libraries(navigation ${NAVIGATION_LIBRARIES})
 
 # Install directives.
 install(TARGETS navigation DESTINATION lib)
