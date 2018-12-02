@@ -24,10 +24,10 @@ def train(args):
     data_loader = DataLoader(data_set, batch_size=args.batch_size, drop_last=True)
 
     # Build model.
-    model = StereoCNN(utils.INPUT_SHAPE, 3, args.batch_size)
+    model = StereoCNN(utils.INPUT_SHAPE, 3, args.batch_size).cuda()
 
     # Loss and optimizer.
-    criterion = nn.MSELoss()
+    criterion = nn.MSELoss().cuda()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
 
     # Train model.
@@ -35,9 +35,9 @@ def train(args):
 
     for epoch in range(args.epochs):
         for idx, sample in enumerate(data_loader):
-            img_left = Variable(sample['img_left'])
-            img_right = Variable(sample['img_right'])
-            vel = Variable(sample['vel'])
+            img_left = Variable(sample['img_left']).cuda()
+            img_right = Variable(sample['img_right']).cuda()
+            vel = Variable(sample['vel']).cuda()
             optimizer.zero_grad()
             vel_out = model(img_left, img_right)
             loss = criterion(vel_out, vel)
