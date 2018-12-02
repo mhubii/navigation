@@ -100,7 +100,7 @@ def load_image(image_file):
     """
 
     img_data = open(image_file, 'rb').read()
-    img_size = (IMAGE_HEIGHT, IMAGE_WIDTH)
+    img_size = (IMAGE_WIDTH, IMAGE_HEIGHT)
 
     image = np.array(Image.frombytes('RGB', img_size, img_data, 'raw'))
 
