@@ -14,7 +14,7 @@ class Model : public torch::nn::Module {
         virtual torch::Tensor forward(torch::Tensor x) = 0;
 };
 
-// Implements a Depp Q-Network.
+// Implements a Deep Q-Network.
 class DQN : public Model {
 
     public:
