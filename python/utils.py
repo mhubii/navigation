@@ -88,6 +88,9 @@ def load_data(data_dir):
                           names=['left', 'right', 'vel0', 'vel1', 'vel2'],
                           engine='python')
 
+    # Randomly shuffle data to remove correlations.
+    data_df = data_df.iloc[np.random.permutation(len(data_df))]
+
     image_paths = data_df[['left', 'right']].values
     velocities = data_df[['vel0', 'vel1', 'vel2']].values
 
