@@ -1,4 +1,7 @@
 import argparse
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np
 import torch
 import torch.nn as nn
 from torchvision import transforms
@@ -8,6 +11,8 @@ from torch.autograd import Variable
 from model import StereoCNN
 import utils
 
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}'] #for \text command
 
 def train(args):
     """
@@ -32,6 +37,7 @@ def train(args):
 
     # Train model.
     best_loss = float('inf')
+    history = []
 
     for epoch in range(args.epochs):
         for idx, sample in enumerate(data_loader):
@@ -52,7 +58,11 @@ def train(args):
             if idx % 10 == 0:
                 print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                       epoch, idx * len(img_left), len(data_loader.dataset),
-                      100. * idx / len(data_loader), loss.data.item()))    
+                      100. * idx / len(data_loader), loss.data.item()))
+
+                history.append(loss.data.item())
+
+    return history
 
 
 if __name__ == '__main__':
@@ -66,7 +76,16 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 	
-	train(args)
+	hist = train(args)
+
+	# Plot results.
+	plt.plot(np.linspace(1, args.epochs + 1, len(hist)), hist)
+	plt.title("Behavioural Cloning Progress")
+	plt.ylabel(r"$\text{MSE}\,/\,(\frac{\text{m}^2}{\text{s}^2})$")
+	plt.xlabel(r"$\text{Epochs}\,/\,\#$")
+	plt.savefig("behavioural_cloning_progress.png")
+
+	np.savetxt("history.csv", hist)
 
 	# Use torch.jit.trace to generate a torch.jit.ScriptModule via tracing.
 	trained_model = StereoCNN(utils.INPUT_SHAPE, 3, 1)
