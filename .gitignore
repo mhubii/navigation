@@ -1,6 +1,9 @@
 # Build folder.
 build
 
+# Data.
+*/data
+
 # Bin.
 bin
 
@@ -10,4 +13,5 @@ bin
 # Python cache.
 */__pycache__
 
-
+# Third party.
+third_party/libtorch
