@@ -13,7 +13,7 @@ add_executable(example_read_cams example_read_cams.cpp)
 target_link_libraries(example_read_cams read_cams ${OpenCV_LIBRARIES})
 
 # Deep Q-Learning.
-find_package(Torch REQUIRED)
+#find_package(Torch REQUIRED)
 
 #set(SOURCE)
 
@@ -21,5 +21,5 @@ find_package(Torch REQUIRED)
 #target_link_libraries(dqn ${TORCH_LIBRARIES})
 
 # Example for Deep Q-Learning.
-add_executable(example_dqn example_dqn.cpp)
-target_link_libraries(example_dqn ${TORCH_LIBRARIES} ${OpenCV_LIBRARIES})
+#add_executable(example_dqn example_dqn.cpp)
+#target_link_libraries(example_dqn ${TORCH_LIBRARIES} ${OpenCV_LIBRARIES})

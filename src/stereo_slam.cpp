@@ -8,7 +8,6 @@
 #include <yarp/dev/all.h>
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/ximgproc.hpp>
 
 
 // ORBSlam impelemts a yarp::os::RateThread that
@@ -58,6 +57,7 @@ public:
 
 		// Track stereo.
 		slam_->TrackStereo(imgs_rgb_cv_[0], imgs_rgb_cv_[1], yarp::os::Time::now());
+
                 // slam_->TrackRGBD(imgs_rgb_cv_[0], wls_disp_, yarp::os::Time::now());
 	};
 
@@ -92,12 +92,12 @@ public:
 		// slam_ = new ORB_SLAM2::System(vocab_.c_str(), config_.c_str(), ORB_SLAM2::System::RGBD, true);
 
 		// Stereo matching and weighted least square filter.
-		l_matcher_ = cv::StereoBM::create(16, 9);
-		r_matcher_ = cv::ximgproc::createRightMatcher(l_matcher_);
-		wls_ = cv::ximgproc::createDisparityWLSFilter(l_matcher_);
+		//l_matcher_ = cv::StereoBM::create(16, 9);
+		//r_matcher_ = cv::ximgproc::createRightMatcher(l_matcher_);
+		//wls_ = cv::ximgproc::createDisparityWLSFilter(l_matcher_);
 
-		wls_->setLambda(1e3);
-		wls_->setSigmaColor(1.5);
+		//wls_->setLambda(1e3);
+		//wls_->setSigmaColor(1.5);
 
 		return true;
 	};
@@ -110,10 +110,23 @@ public:
 			delete pds_[i];
 		}
 
-		delete slam_;
-
 		// Stop all threads.
 		slam_->Shutdown();
+
+		std::vector<ORB_SLAM2::MapPoint*> points = slam_->GetTrackedMapPoints();
+
+		if (points.size() != 0) {
+			for (int i = 0; i < points.size(); i++) {
+
+				if (points[i]->isBad())
+					continue;
+				//cv::Mat point = points[i]->GetWorldPos();
+				//std::cout << point << std::endl;
+			}
+		}
+
+
+		delete slam_;
 	};
 
 
@@ -135,14 +148,14 @@ private:
 	std::vector<cv::Mat> imgs_gray_cv_;
 
         // Stereo matching and weighted least square filter.
-        cv::Ptr<cv::StereoBM> l_matcher_;
-        cv::Ptr<cv::StereoMatcher> r_matcher_;
-        cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_;
+        //cv::Ptr<cv::StereoBM> l_matcher_;
+        //cv::Ptr<cv::StereoMatcher> r_matcher_;
+        //cv::Ptr<cv::ximgproc::DisparityWLSFilter> wls_;
 
         // Disparity map.
-        cv::Mat l_disp_; 
-        cv::Mat r_disp_; 
-        cv::Mat wls_disp_;
+        //cv::Mat l_disp_; 
+        //cv::Mat r_disp_; 
+        //cv::Mat wls_disp_;
 
 	// SLAM system.
 	ORB_SLAM2::System* slam_;
@@ -326,7 +339,7 @@ int main(int argc, char** argv)
 	// Initialize the thread.
 	int period = 10;
 	std::string vocab = "config/ORBvoc.txt";
-	std::string config = "config/heicub_rgbd.yaml";
+	std::string config = "config/heicub_stereo.yaml";
 	std::vector<std::string> locals = {"/client/cam/left", "/client/cam/right"};
 	std::vector<std::string> remotes = {"/vehicle/cam/left", "/vehicle/cam/right"};
 	

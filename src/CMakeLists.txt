@@ -1,15 +1,15 @@
 # SLAM.
 find_package(YARP REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(PCL REQUIRED)
+#find_package(PCL REQUIRED)
 find_package(ORB_SLAM2 REQUIRED)
 find_package(Pangolin REQUIRED)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/third_party/ORB_SLAM2 
     ${PROJECT_SOURCE_DIR}/third_party/ORB_SLAM2/include 
-    ${PCL_INCLUDE_DIRS}
-    ${CAFFE2_INCLUDE_DIRS}
+    #${PCL_INCLUDE_DIRS}
+    #${CAFFE2_INCLUDE_DIRS}
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
