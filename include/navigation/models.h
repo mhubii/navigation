@@ -71,6 +71,9 @@ class Actor : public torch::nn::Module {
             left_in = torch::relu(left_conv4_->forward(left_in));
             left_in = torch::relu(left_conv5_->forward(left_in));
 
+            // Flatten.
+            left_in = left_in.view({batch_size_, -1});
+
             left_in = torch::relu(left_fc1_->forward(left_in));
             left_in = torch::relu(left_fc2_->forward(left_in));
             left_in = torch::relu(left_fc3_->forward(left_in));
@@ -83,14 +86,13 @@ class Actor : public torch::nn::Module {
             right_in = torch::relu(right_conv4_->forward(right_in));
             right_in = torch::relu(right_conv5_->forward(right_in));
 
+            // Flatten.
+            right_in = right_in.view({batch_size_, -1});
+
             right_in = torch::relu(right_fc1_->forward(right_in));
             right_in = torch::relu(right_fc2_->forward(right_in));
             right_in = torch::relu(right_fc3_->forward(right_in));
             right_in = torch::relu(right_fc4_->forward(right_in));
-
-            // Flatten layers.
-            left_in = left_in.view({batch_size_, -1});
-            right_in = right_in.view({batch_size_, -1});
 
             // Substract layers.
             return left_in - right_in;
@@ -219,6 +221,9 @@ class Critic : public torch::nn::Module {
             left_in = torch::relu(left_conv4_->forward(left_in));
             left_in = torch::relu(left_conv5_->forward(left_in));
 
+            // Flatten.
+            left_in = left_in.view({batch_size_, -1});            
+
             left_in = torch::relu(left_fc1_->forward(left_in));
             left_in = torch::relu(left_fc2_->forward(left_in));
             left_in = torch::relu(left_fc3_->forward(left_in));
@@ -236,8 +241,7 @@ class Critic : public torch::nn::Module {
             right_in = torch::relu(right_fc3_->forward(right_in));
             right_in = torch::relu(right_fc4_->forward(right_in));
 
-            // Flatten layers.
-            left_in = left_in.view({batch_size_, -1});
+            // Flatten.
             right_in = right_in.view({batch_size_, -1});
 
             // Concatenate state and actions.
