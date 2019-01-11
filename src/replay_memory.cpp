@@ -2,23 +2,35 @@
 
 ReplayMemory::ReplayMemory(int64_t buffer_size, int64_t batch_size)
     : random_engine_(0),
+      initialized_(false),
       buffer_size_(buffer_size),
-      batch_size_(batch_size) {
+      batch_size_(batch_size),
+      img_shape_(0),
+      action_shape_(0) {
 
 }
 
 void ReplayMemory::Add(state& state) {
 
+    if (!initialized_) {
+
+        // Get shapes if not initialized.
+        img_shape_ = std::get<0>(state).sizes();
+        action_shape_ = std::get<2>(state).sizes();
+
+        initialized_ = true;
+    };
+
     // Add state to memory.
-    if (memory_.size() == buffer_size_) {
+    if (deque_.size() == buffer_size_) {
     
-        memory_.pop_front();
+        deque_.pop_front();
     }
 
-    memory_.push_back(state);
+    deque_.push_back(state);
 }
 
-memoryptr ReplayMemory::Sample() {
+states_batch ReplayMemory::Sample() {
 
     // Generate random indices.
     std::vector<int> idx;
@@ -29,18 +41,33 @@ memoryptr ReplayMemory::Sample() {
         idx.push_back(std::uniform_int_distribution<int>(0, buffer_size_ - 1)(random_engine_));
     }
 
-    memoryptr mem_ptr;
+	// Sample from deque.
+	if (deque_.size() > batch_size_) {
 
-    // Sample from memory.
-    for (uint i = 0; i < batch_size_; i++) {
+		torch::Tensor left_imgs = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
+		torch::Tensor right_imgs = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
+        torch::Tensor actions = torch::empty({batch_size_, action_shape_[0]});
+        torch::Tensor rewards = torch::empty({batch_size_, 1});
+        torch::Tensor next_states = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
+        torch::Tensor dones = torch::empty({batch_size_, 1});
 
-        mem_ptr.push_back(&memory_[idx[i]]);
-    }
+		for (int i = 0; i < batch_size_; i++) {
 
-    return mem_ptr;
+			left_imgs.slice(0, i, i+1) = std::get<0>(deque_[idx[i]]);
+			right_imgs.slice(0, i, i+1) = std::get<1>(deque_[idx[i]]);
+            actions.slice(0, i, i+1) = std::get<2>(deque_[idx[i]]);
+            rewards.slice(0, i, i+1) = std::get<3>(deque_[idx[i]]);
+            next_states.slice(0, i, i+1) = std::get<4>(deque_[idx[i]]);
+            dones.slice(0, i, i+1) = std::get<5>(deque_[idx[i]]);
+		}
+
+		return {left_imgs, right_imgs, actions, rewards, next_states, dones};
+	}
+
+	return {};
 }
 
 int64_t ReplayMemory::Length() {
 
-    return memory_.size();
+    return deque_.size();
 }
