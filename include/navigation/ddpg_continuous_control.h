@@ -19,9 +19,9 @@ class DDPGContinuousControl {
 
         void Reset();
 
-        void Learn(memoryptr states, double gamma);
+        void Learn(states_batch& states, double gamma);
 
-        void SoftUpdate();
+        void SoftUpdate(torch::nn::Module& local_model, torch::nn::Module& target_model, double tau);
 
     private:
 
@@ -40,6 +40,7 @@ class DDPGContinuousControl {
         torch::optim::Adam critic_opt_;
 
         ReplayMemory replay_memory_;
+        states_batch states_batch_;
 };
 
 #endif
