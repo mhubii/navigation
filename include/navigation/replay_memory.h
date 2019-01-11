@@ -25,19 +25,32 @@ struct states_batch {
     torch::Tensor right_imgs;
     torch::Tensor actions;
     torch::Tensor rewards;
-    torch::Tensor next_states;
+    torch::Tensor next_left_imgs;
+    torch::Tensor next_right_imgs;
     torch::Tensor dones;
 
     // Operator to check for uninitialized structs.
 	bool operator !() const {
 
-		return (this->left_imgs.numel()   == 0 || 
-                this->right_imgs.numel()  == 0 ||
-                this->actions.numel()     == 0 ||
-                this->rewards.numel()     == 0 ||
-                this->next_states.numel() == 0 ||
-                this->dones.numel()       == 0);
+		return (this->left_imgs.numel()       == 0 || 
+                this->right_imgs.numel()      == 0 ||
+                this->actions.numel()         == 0 ||
+                this->rewards.numel()         == 0 ||
+                this->next_left_imgs.numel()  == 0 ||
+                this->next_right_imgs.numel() == 0 ||
+                this->dones.numel()           == 0);
 	};
+
+    explicit operator bool() const {
+
+        return (this->left_imgs.numel()       != 0 && 
+                this->right_imgs.numel()      != 0 &&
+                this->actions.numel()         != 0 &&
+                this->rewards.numel()         != 0 &&
+                this->next_left_imgs.numel()  != 0 &&
+                this->next_right_imgs.numel() != 0 &&
+                this->dones.numel()           != 0);
+    }
 };
 
 

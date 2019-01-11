@@ -48,7 +48,8 @@ states_batch ReplayMemory::Sample() {
 		torch::Tensor right_imgs = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
         torch::Tensor actions = torch::empty({batch_size_, action_shape_[0]});
         torch::Tensor rewards = torch::empty({batch_size_, 1});
-        torch::Tensor next_states = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
+        torch::Tensor next_left_imgs = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
+        torch::Tensor next_right_imgs = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
         torch::Tensor dones = torch::empty({batch_size_, 1});
 
 		for (int i = 0; i < batch_size_; i++) {
@@ -57,11 +58,12 @@ states_batch ReplayMemory::Sample() {
 			right_imgs.slice(0, i, i+1) = std::get<1>(deque_[idx[i]]);
             actions.slice(0, i, i+1) = std::get<2>(deque_[idx[i]]);
             rewards.slice(0, i, i+1) = std::get<3>(deque_[idx[i]]);
-            next_states.slice(0, i, i+1) = std::get<4>(deque_[idx[i]]);
+            next_left_imgs.slice(0, i, i+1) = std::get<4>(deque_[idx[i]]);
+            next_right_imgs.slice(0, i, i+1) = std::get<4>(deque_[idx[i]]);
             dones.slice(0, i, i+1) = std::get<5>(deque_[idx[i]]);
 		}
 
-		return {left_imgs, right_imgs, actions, rewards, next_states, dones};
+		return {left_imgs, right_imgs, actions, rewards, next_left_imgs, next_right_imgs, dones};
 	}
 
 	return {};
