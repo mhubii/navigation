@@ -120,10 +120,9 @@ void DDPGContinuousControl::Learn(states_batch& states, double gamma) {
 
 void DDPGContinuousControl::SoftUpdate(torch::nn::Module& local_model, torch::nn::Module& target_model, double tau) {
 
-    // Soft update model parameters.
+    // Soft update model parameters. Iterate over vector of tensors.
     for (uint i = 0; i < local_model.parameters().size(); i++) {
 
         target_model.parameters().at(i).set_data(tau*local_model.parameters().at(i) + (1. - tau)*target_model.parameters().at(i));
-
     }
 }
