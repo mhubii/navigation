@@ -100,7 +100,13 @@ void DDPGContinuousControl::Learn(states_batch& states, double gamma) {
     // Minimize loss.
     critic_opt_.zero_grad();
     critic_loss.backward();
-    // Clip gradient norm not implemented atm.. 
+
+    // Clip gradient norm not implemented atm.. It is kind of! https://pytorch.org/cppdocs/api/function_namespaceat_1a20be2de650096933b7c01c4d943fda11.html?highlight=clamp
+    for (uint i = 0; i < critic_local_.parameters().size(); i++) {
+    
+        torch::clamp(critic_local_.parameters()[i], 0., 1.); 
+    }
+
     critic_opt_.step();
 
     // Update actor.
