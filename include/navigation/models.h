@@ -9,10 +9,8 @@ class Actor : public torch::nn::Module {
     public:
 
         // Constructor.
-        Actor(at::IntList input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t dof, int64_t batch_size)
-            : batch_size_(batch_size),
-            
-              // Left layers.
+        Actor(at::IntList input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t dof)
+            : // Left layers.
               left_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)),
               left_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)),
               left_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
@@ -72,9 +70,10 @@ class Actor : public torch::nn::Module {
             left_in = torch::relu(left_conv5_->forward(left_in));
 
             // Flatten.
-            left_in = left_in.view({batch_size_, -1});
+            left_in = left_in.view({left_in.sizes()[0], -1});
 
             left_in = torch::relu(left_fc1_->forward(left_in));
+            std::cout << "size" << left_in.sizes() << std::endl;
             left_in = torch::relu(left_fc2_->forward(left_in));
             left_in = torch::relu(left_fc3_->forward(left_in));
             left_in = torch::relu(left_fc4_->forward(left_in));
@@ -87,7 +86,7 @@ class Actor : public torch::nn::Module {
             right_in = torch::relu(right_conv5_->forward(right_in));
 
             // Flatten.
-            right_in = right_in.view({batch_size_, -1});
+            right_in = right_in.view({left_in.sizes()[0], -1});
 
             right_in = torch::relu(right_fc1_->forward(right_in));
             right_in = torch::relu(right_fc2_->forward(right_in));
@@ -99,8 +98,6 @@ class Actor : public torch::nn::Module {
         }
 
     private:
-
-        int64_t batch_size_;
 
         // Left layers.
         torch::nn::Conv2d left_conv1_;
@@ -129,7 +126,7 @@ class Actor : public torch::nn::Module {
         // Get number of elements of output.
         int64_t GetConvOutput(at::IntList input_shape) {
 
-            torch::Tensor in = torch::zeros({1, input_shape[0], input_shape[1], input_shape[2]}, torch::kFloat);
+            torch::Tensor in = torch::zeros(input_shape, torch::kFloat).unsqueeze(0);
             torch::Tensor out = ForwardConv(in);
 
             return out.numel();
@@ -142,7 +139,7 @@ class Actor : public torch::nn::Module {
             in = torch::relu(left_conv3_->forward(in));
             in = torch::relu(left_conv4_->forward(in));
             in = torch::relu(left_conv5_->forward(in));
-
+            
             return in;
         };
 };
@@ -153,10 +150,8 @@ class Critic : public torch::nn::Module {
     public:
 
             // Constructor.
-        Critic(at::IntList input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t dof, int64_t batch_size)
-            : batch_size_(batch_size),
-            
-              // Left layers.
+        Critic(at::IntList input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t dof)
+            : // Left layers.
               left_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)),
               left_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)),
               left_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
@@ -222,7 +217,7 @@ class Critic : public torch::nn::Module {
             left_in = torch::relu(left_conv5_->forward(left_in));
 
             // Flatten.
-            left_in = left_in.view({batch_size_, -1});            
+            left_in = left_in.view({left_in.sizes()[0], -1});            
 
             left_in = torch::relu(left_fc1_->forward(left_in));
             left_in = torch::relu(left_fc2_->forward(left_in));
@@ -242,7 +237,7 @@ class Critic : public torch::nn::Module {
             right_in = torch::relu(right_fc4_->forward(right_in));
 
             // Flatten.
-            right_in = right_in.view({batch_size_, -1});
+            right_in = right_in.view({left_in.sizes()[0], -1});
 
             // Concatenate state and actions.
             torch::Tensor out = torch::cat({left_in - right_in, state}, 0);
@@ -253,8 +248,6 @@ class Critic : public torch::nn::Module {
         }
 
     private:
-
-        int64_t batch_size_;
 
         // Left layers.
         torch::nn::Conv2d left_conv1_;
@@ -286,7 +279,7 @@ class Critic : public torch::nn::Module {
         // Get number of elements of output.
         int64_t GetConvOutput(at::IntList input_shape) {
 
-            torch::Tensor in = torch::zeros({1, input_shape[0], input_shape[1], input_shape[2]}, torch::kFloat);
+            torch::Tensor in = torch::zeros(input_shape, torch::kFloat).unsqueeze(0);
             torch::Tensor out = ForwardConv(in);
 
             return out.numel();
