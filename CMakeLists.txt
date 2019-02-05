@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 11)
 
 project(navigation)
 
+# Cmake.
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 # Options.
 option(BUILD_WITH_TORCH "Whether to build Torch. This enables learning features." OFF)
 option(BUILD_WITH_ORB_SLAM2 "Whether to build with ORB SLAM2. This enables SLAM." OFF) # TODO
