@@ -15,12 +15,12 @@ DDPGContinuousControl::DDPGContinuousControl(at::IntList input_shape, int64_t do
 
       ou_process_({batch_size, 1, dof}, MU, THETA, SIGMA), // size of ou_process?
       
-      actor_local_(input_shape, dof, batch_size),
-      actor_target_(input_shape, dof, batch_size),
+      actor_local_(input_shape, dof),
+      actor_target_(input_shape, dof),
       actor_opt_(actor_local_.parameters(), torch::optim::AdamOptions(LR_ACTOR).weight_decay(WEIGHT_DECAY)),
       
-      critic_local_(input_shape, dof, batch_size),
-      critic_target_(input_shape, dof, batch_size),
+      critic_local_(input_shape, dof),
+      critic_target_(input_shape, dof),
       critic_opt_(critic_local_.parameters(), torch::optim::AdamOptions(LR_CRITIC).weight_decay(WEIGHT_DECAY)),
       
       replay_memory_(buffer_size, batch_size),
@@ -30,7 +30,7 @@ DDPGContinuousControl::DDPGContinuousControl(at::IntList input_shape, int64_t do
 
 void DDPGContinuousControl::Step(memory& states) {
 
-    // Save experience in replay memory, and use random sample from buffer to learn.
+    // // Save experience in replay memory, and use random sample from buffer to learn.
     for (int i = 0; i < states.size(); i++) {
 
         replay_memory_.Add(states[i]);
@@ -48,7 +48,7 @@ void DDPGContinuousControl::Step(memory& states) {
 
         else {
 
-            printf("DDPGContinuousControl -- now state batches received.\n");
+            printf("DDPGContinuousControl -- no state batches received.\n");
         }
     }
 }
@@ -68,6 +68,11 @@ void DDPGContinuousControl::Act(torch::Tensor left_in, torch::Tensor right_in, b
 
         action += ou_process_.Sample();
     }
+}
+
+void DDPGContinuousControl::Reset() {
+
+    // TODO
 }
 
 void DDPGContinuousControl::Learn(states_batch& states, double gamma) {
