@@ -28,13 +28,10 @@ DDPGContinuousControl::DDPGContinuousControl(at::IntList input_shape, int64_t do
 
 };
 
-void DDPGContinuousControl::Step(memory& states) {
+void DDPGContinuousControl::Step(state& state) {
 
-    // // Save experience in replay memory, and use random sample from buffer to learn.
-    for (int i = 0; i < states.size(); i++) {
-
-        replay_memory_.Add(states[i]);
-    }
+    // Save experience in replay memory, and use random sample from buffer to learn.
+    replay_memory_.Add(state);
 
     // Learn if enough samples are available.
     if (replay_memory_.Length() > batch_size_) {
@@ -53,7 +50,7 @@ void DDPGContinuousControl::Step(memory& states) {
     }
 }
 
-void DDPGContinuousControl::Act(torch::Tensor left_in, torch::Tensor right_in, bool add_noise) {
+torch::Tensor DDPGContinuousControl::Act(torch::Tensor left_in, torch::Tensor right_in, bool add_noise) {
 
     // Returns actions for a given input as per current policy.
     actor_local_.eval();
@@ -68,11 +65,13 @@ void DDPGContinuousControl::Act(torch::Tensor left_in, torch::Tensor right_in, b
 
         action += ou_process_.Sample();
     }
+
+    return action;
 }
 
 void DDPGContinuousControl::Reset() {
 
-    // TODO
+    ou_process_.Reset();
 }
 
 void DDPGContinuousControl::Learn(states_batch& states, double gamma) {
@@ -93,7 +92,7 @@ void DDPGContinuousControl::Learn(states_batch& states, double gamma) {
     // Update critic.
     // Get predicted next-state actoins and Q-values from target models.
     torch::Tensor actions_next = actor_target_.forward(next_left_imgs, next_right_imgs);
-    torch::Tensor q_targets_next = critic_target_.forward(next_left_imgs, next_right_imgs, actions_next);
+    torch::Tensor q_targets_next = critic_target_.forward(next_left_imgs, next_right_imgs, actions_next).detach();
 
     // Compute Q-targets for current states.
     torch::Tensor q_targets = rewards + gamma*q_targets_next*(1 - dones);
@@ -102,14 +101,14 @@ void DDPGContinuousControl::Learn(states_batch& states, double gamma) {
     torch::Tensor q_expected = critic_local_.forward(left_imgs, right_imgs, actions);
     torch::Tensor critic_loss = torch::mse_loss(q_expected, q_targets);
 
-    // Minimize loss.
+    // // Minimize loss.
     critic_opt_.zero_grad();
     critic_loss.backward();
 
     // Clip gradient norm not implemented atm.. It is kind of! https://pytorch.org/cppdocs/api/function_namespaceat_1a20be2de650096933b7c01c4d943fda11.html?highlight=clamp
     for (uint i = 0; i < critic_local_.parameters().size(); i++) {
     
-        torch::clamp(critic_local_.parameters()[i], 0., 1.); 
+        torch::clamp(critic_local_.parameters().at(i), 0., 1.); 
     }
 
     critic_opt_.step();
@@ -125,7 +124,7 @@ void DDPGContinuousControl::Learn(states_batch& states, double gamma) {
     actor_opt_.step();
 
     // Update target networks.
-    SoftUpdate(critic_local_, critic_target_, TAU);
+    SoftUpdate(critic_local_, critic_target_, TAU); // BUGGY TODO
     SoftUpdate(actor_local_, actor_target_, TAU);
 }
 
@@ -134,6 +133,7 @@ void DDPGContinuousControl::SoftUpdate(torch::nn::Module& local_model, torch::nn
     // Soft update model parameters. Iterate over vector of tensors.
     for (uint i = 0; i < local_model.parameters().size(); i++) {
 
-        target_model.parameters().at(i).set_data(tau*local_model.parameters().at(i) + (1. - tau)*target_model.parameters().at(i));
+        //target_model.parameters().at(i).set_data(tau*local_model.parameters().at(i) + (1. - tau)*target_model.parameters().at(i));
+        target_model.parameters().at(i).detach().copy_(tau*local_model.parameters().at(i) + (1. - tau)*target_model.parameters().at(i));
     }
 }
