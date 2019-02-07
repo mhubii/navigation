@@ -13,9 +13,9 @@ class DDPGContinuousControl {
 
         DDPGContinuousControl(at::IntList input_shape, int64_t dof, int64_t batch_size, int64_t buffer_size);
 
-        void Step(memory& states);
+        void Step(state& state);
 
-        void Act(torch::Tensor left_in, torch::Tensor right_in, bool add_noise);
+        torch::Tensor Act(torch::Tensor left_in, torch::Tensor right_in, bool add_noise);
 
         void Reset();
 
