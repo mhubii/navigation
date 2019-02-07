@@ -29,15 +29,20 @@ Keyboard* Keyboard::Create(const char* path) {
 
 	if (fd == -1) {
 	
-		printf("Keyboard -- failed to open %s: %s\n", path, strerror(errno));
+		printf("Keyboard -- failed to open %s: %s, try running sudo\n", path, strerror(errno));
+
+		return NULL;
 	}
 
-	Keyboard* kb = new Keyboard();
+	else {
+		 
+		Keyboard* kb = new Keyboard();
 
-	kb->found_device_ = fd;
-	kb->path_ = path;
+		kb->found_device_ = fd;
+		kb->path_ = path;
 
-	return kb;
+		return kb;
+	}
 }
 
 // Poll.
