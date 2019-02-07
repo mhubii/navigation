@@ -5,15 +5,16 @@
 #include <random>
 
 #include <torch/torch.h>
-#include <boost/ptr_container/ptr_vector.hpp>
+#include <Eigen/Core>
 
 // States.
 using state = std::tuple<torch::Tensor /*left img state*/,
                          torch::Tensor /*right img state*/,
                          torch::Tensor /*action*/, 
                          torch::Tensor /*reward*/, 
-                         torch::Tensor /*next_state*/,
-                         bool          /*termination state*/>;
+                         torch::Tensor /*left img next_state*/,
+                         torch::Tensor /*right img next state*/,
+                         torch::Tensor /*termination state*/>;
 
 // All states in the buffer.
 using memory = std::deque<state>;

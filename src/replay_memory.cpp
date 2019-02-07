@@ -34,22 +34,22 @@ states_batch ReplayMemory::Sample() {
 
     // Generate random indices.
     std::vector<int> idx;
-    idx.reserve(batch_size_);
+    idx.reserve(deque_.size());
 
     for (uint i = 0; i < batch_size_; i++) {
 
-        idx.push_back(std::uniform_int_distribution<int>(0, buffer_size_ - 1)(random_engine_));
+        idx.push_back(std::uniform_int_distribution<int>(0, deque_.size() - 1)(random_engine_));
     }
 
 	// Sample from deque.
 	if (deque_.size() > batch_size_) {
 
-		torch::Tensor left_imgs = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
-		torch::Tensor right_imgs = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
-        torch::Tensor actions = torch::empty({batch_size_, action_shape_[0]});
+		torch::Tensor left_imgs = torch::empty({batch_size_, img_shape_[1], img_shape_[2], img_shape_[3]});
+		torch::Tensor right_imgs = torch::empty({batch_size_, img_shape_[1], img_shape_[2], img_shape_[3]});
+        torch::Tensor actions = torch::empty({batch_size_, action_shape_[1]});
         torch::Tensor rewards = torch::empty({batch_size_, 1});
-        torch::Tensor next_left_imgs = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
-        torch::Tensor next_right_imgs = torch::empty({batch_size_, img_shape_[0], img_shape_[1], img_shape_[2]});
+        torch::Tensor next_left_imgs = torch::empty({batch_size_, img_shape_[1], img_shape_[2], img_shape_[3]});
+        torch::Tensor next_right_imgs = torch::empty({batch_size_, img_shape_[1], img_shape_[2], img_shape_[3]});
         torch::Tensor dones = torch::empty({batch_size_, 1});
 
 		for (int i = 0; i < batch_size_; i++) {
@@ -59,8 +59,8 @@ states_batch ReplayMemory::Sample() {
             actions.slice(0, i, i+1) = std::get<2>(deque_[idx[i]]);
             rewards.slice(0, i, i+1) = std::get<3>(deque_[idx[i]]);
             next_left_imgs.slice(0, i, i+1) = std::get<4>(deque_[idx[i]]);
-            next_right_imgs.slice(0, i, i+1) = std::get<4>(deque_[idx[i]]);
-            dones.slice(0, i, i+1) = std::get<5>(deque_[idx[i]]);
+            next_right_imgs.slice(0, i, i+1) = std::get<5>(deque_[idx[i]]);
+            dones.slice(0, i, i+1) = std::get<6>(deque_[idx[i]]);
 		}
 
 		return {left_imgs, right_imgs, actions, rewards, next_left_imgs, next_right_imgs, dones};
