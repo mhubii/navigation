@@ -297,79 +297,62 @@ class Critic : public torch::nn::Module {
 
 
 // Implements a convolutional neural net for stereo inputs. It maps states to actions. Suitable for hybrid learning.
-class DQN : public torch::nn::Module {
+class DQNImpl : public torch::nn::Module {
 
     public:
 
         // Constructor.
-        DQN(at::IntList input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t n_actions)
+        DQNImpl(at::IntList input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t n_actions)
             : // Left layers.
-              left_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)),
-              left_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)),
-              left_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
+              left_conv1_(register_module("left_conv1", torch::nn::Conv2d(torch::nn::Conv2dOptions(3, 8, 5).stride(2)))),
+              left_conv2_(register_module("left_conv2", torch::nn::Conv2d(torch::nn::Conv2dOptions(8, 16, 5).stride(2)))),
+              left_conv3_(register_module("left_conv3", torch::nn::Conv2d(torch::nn::Conv2dOptions(16, 32, 3).stride(2)))),
 
-              left_fc1_(GetConvOutput(input_shape), 16),
-              left_fc2_(16, 8),
-              left_fc3_(8, n_actions),
+              left_fc1_(register_module("left_fc1", torch::nn::Linear(GetConvOutput(input_shape), 16))),
+              left_fc2_(register_module("left_fc2", torch::nn::Linear(16, 8))),
+              left_fc3_(register_module("left_fc3", torch::nn::Linear(8, n_actions))),
 
               // Right layers.
-              right_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)),
-              right_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)),
-              right_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
+              right_conv1_(register_module("right_conv1", torch::nn::Conv2d(torch::nn::Conv2dOptions(3, 8, 5).stride(2)))),
+              right_conv2_(register_module("right_conv2", torch::nn::Conv2d(torch::nn::Conv2dOptions(8, 16, 5).stride(2)))),
+              right_conv3_(register_module("right_conv3", torch::nn::Conv2d(torch::nn::Conv2dOptions(16, 32, 3).stride(2)))),
 
-              right_fc1_(GetConvOutput(input_shape), 16),
-              right_fc2_(16, 8),
-              right_fc3_(8, n_actions) {
+              right_fc1_(register_module("right_fc1", torch::nn::Linear(GetConvOutput(input_shape), 16))),
+              right_fc2_(register_module("right_fc2", torch::nn::Linear(16, 8))),
+              right_fc3_(register_module("right_fc3", torch::nn::Linear(8, n_actions))) {
 
-            // Left layers.
-            register_module("left_conv1", left_conv1_);
-            register_module("left_conv2", left_conv2_);
-            register_module("left_conv3", left_conv3_);
-
-            register_module("left_fc1", left_fc1_);
-            register_module("left_fc2", left_fc2_);
-            register_module("left_fc3", left_fc3_);
-
-            // Right layers.
-            register_module("right_conv1", right_conv1_);
-            register_module("right_conv2", right_conv2_);
-            register_module("right_conv3", right_conv3_);
-
-            register_module("right_fc1", right_fc1_);
-            register_module("right_fc2", right_fc2_);
-            register_module("right_fc3", right_fc3_);
-        }
+        };
 
         // Forward pass.
         torch::Tensor forward(torch::Tensor left_in, torch::Tensor right_in) {
 
             // Left layers.
-            left_in = torch::relu(left_conv1_->forward(left_in));
-            left_in = torch::relu(left_conv2_->forward(left_in));
-            left_in = torch::relu(left_conv3_->forward(left_in));
+            left_in = torch::relu(left_conv1_(left_in));
+            left_in = torch::relu(left_conv2_(left_in));
+            left_in = torch::relu(left_conv3_(left_in));
 
             // Flatten.
             left_in = left_in.view({left_in.sizes()[0], -1});
 
-            left_in = torch::relu(left_fc1_->forward(left_in));
-            left_in = torch::relu(left_fc2_->forward(left_in));
-            left_in = torch::relu(left_fc3_->forward(left_in));
+            left_in = torch::relu(left_fc1_(left_in));
+            left_in = torch::relu(left_fc2_(left_in));
+            left_in = torch::relu(left_fc3_(left_in));
 
             // Right layers.
-            right_in = torch::relu(right_conv1_->forward(right_in));
-            right_in = torch::relu(right_conv2_->forward(right_in));
-            right_in = torch::relu(right_conv3_->forward(right_in));
+            right_in = torch::relu(right_conv1_(right_in));
+            right_in = torch::relu(right_conv2_(right_in));
+            right_in = torch::relu(right_conv3_(right_in));
 
             // Flatten.
             right_in = right_in.view({right_in.sizes()[0], -1});
 
-            right_in = torch::relu(right_fc1_->forward(right_in));
-            right_in = torch::relu(right_fc2_->forward(right_in));
-            right_in = torch::relu(right_fc3_->forward(right_in));
+            right_in = torch::relu(right_fc1_(right_in));
+            right_in = torch::relu(right_fc2_(right_in));
+            right_in = torch::relu(right_fc3_(right_in));
 
             // Substract layers.
             return left_in - right_in;
-        }
+        };
 
     private:
 
@@ -398,7 +381,7 @@ class DQN : public torch::nn::Module {
             torch::Tensor out = ForwardConv(in);
 
             return out.numel();
-        }
+        };
 
         torch::Tensor ForwardConv(torch::Tensor in) {
 
@@ -410,5 +393,6 @@ class DQN : public torch::nn::Module {
         };
 };
 
+TORCH_MODULE(DQN);
 
 #endif // MODELS_H_
