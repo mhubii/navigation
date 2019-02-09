@@ -1,19 +1,21 @@
 #include "ddpg_continuous_control.h"
 
-#define LR_ACTOR 1e-4    // Learning rate.
-#define LR_CRITIC 1e-3   // Learning rate.
-#define WEIGHT_DECAY 0.  // Weigt decay.
-#define GAMMA 0.99       // Discount factor.
-#define TAU 1e-3         // For soft update of target parameters.
+#define LR_ACTOR 1e-2f     // Learning rate.
+#define LR_CRITIC 1e-3f    // Learning rate.
+#define WEIGHT_DECAY 0.0f  // Weight decay.
+#define GAMMA 0.9f        // Discount factor.
+#define TAU 1e-2f          // For soft update of target parameters.
 
-#define MU 0.      // Mean of the Ornstein-Uhlenbeck process.
-#define THETA 0.15 // Uncertainty parameters of the Ornstein-Uhlenbeck process.
-#define SIGMA 0.2
+#define MU 0.0f      // Mean of the Ornstein-Uhlenbeck process.
+#define THETA 0.15f // Uncertainty parameters of the Ornstein-Uhlenbeck process.
+#define SIGMA 0.2f
 
-DDPGContinuousControl::DDPGContinuousControl(at::IntList input_shape, int64_t dof, int64_t batch_size, int64_t buffer_size)
+DDPGContinuousControl::DDPGContinuousControl(torch::IntList input_shape, int64_t dof, int64_t batch_size, int64_t buffer_size, torch::Device device)
     : batch_size_(batch_size),
 
-      ou_process_({batch_size, 1, dof}, MU, THETA, SIGMA), // size of ou_process?
+      device_(device),
+
+      ou_process_({1, dof}, MU, THETA, SIGMA),
       
       actor_local_(input_shape, dof),
       actor_target_(input_shape, dof),
@@ -26,6 +28,11 @@ DDPGContinuousControl::DDPGContinuousControl(at::IntList input_shape, int64_t do
       replay_memory_(buffer_size, batch_size),
       states_batch_({}) {
 
+          // Convert to device.
+          actor_local_.to(device_);
+          actor_target_.to(device_);
+          critic_local_.to(device_);
+          critic_target_.to(device_);
 };
 
 void DDPGContinuousControl::Step(state& state) {
@@ -36,7 +43,7 @@ void DDPGContinuousControl::Step(state& state) {
     // Learn if enough samples are available.
     if (replay_memory_.Length() > batch_size_) {
 
-        states_batch_ = replay_memory_.Sample();
+        states_batch_ = replay_memory_.Sample(device_);
         
         if (states_batch_) {
         
@@ -56,14 +63,14 @@ torch::Tensor DDPGContinuousControl::Act(torch::Tensor left_in, torch::Tensor ri
     actor_local_.eval();
 
     torch::NoGradGuard no_grad;
-
-    torch::Tensor action = actor_local_.forward(left_in, right_in);
+ 
+    torch::Tensor action = actor_local_.forward(left_in.to(device_), right_in.to(device_));
 
     actor_local_.train();
 
     if (add_noise) {
 
-        action += ou_process_.Sample();
+        action += ou_process_.Sample().to(device_);
     }
 
     return action;
@@ -90,7 +97,7 @@ void DDPGContinuousControl::Learn(states_batch& states, double gamma) {
     torch::Tensor& dones = states.dones;
 
     // Update critic.
-    // Get predicted next-state actoins and Q-values from target models.
+    // Get predicted next-state actions and Q-values from target models.
     torch::Tensor actions_next = actor_target_.forward(next_left_imgs, next_right_imgs);
     torch::Tensor q_targets_next = critic_target_.forward(next_left_imgs, next_right_imgs, actions_next).detach();
 
@@ -117,6 +124,8 @@ void DDPGContinuousControl::Learn(states_batch& states, double gamma) {
     // Compute actor loss.
     torch::Tensor actions_pred = actor_local_.forward(left_imgs, right_imgs);
     torch::Tensor actor_loss = -critic_local_.forward(left_imgs, right_imgs, actions_pred).mean();
+    std::cout << "critic_loss: " << *(critic_loss.to(torch::kCPU).data<float>()) 
+              << "    actor_loss: " << *(actor_loss.to(torch::kCPU).data<float>()) << std::endl;
     
     // Minimize the loss.
     actor_opt_.zero_grad();
@@ -124,7 +133,7 @@ void DDPGContinuousControl::Learn(states_batch& states, double gamma) {
     actor_opt_.step();
 
     // Update target networks.
-    SoftUpdate(critic_local_, critic_target_, TAU); // BUGGY TODO
+    SoftUpdate(critic_local_, critic_target_, TAU);
     SoftUpdate(actor_local_, actor_target_, TAU);
 }
 
@@ -133,7 +142,7 @@ void DDPGContinuousControl::SoftUpdate(torch::nn::Module& local_model, torch::nn
     // Soft update model parameters. Iterate over vector of tensors.
     for (uint i = 0; i < local_model.parameters().size(); i++) {
 
-        //target_model.parameters().at(i).set_data(tau*local_model.parameters().at(i) + (1. - tau)*target_model.parameters().at(i));
+        // May be prone to errors here TODO.
         target_model.parameters().at(i).detach().copy_(tau*local_model.parameters().at(i) + (1. - tau)*target_model.parameters().at(i));
     }
 }
