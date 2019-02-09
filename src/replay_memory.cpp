@@ -2,7 +2,7 @@
 
 ReplayMemory::ReplayMemory(int64_t buffer_size, int64_t batch_size)
     : rd_(),
-      random_engine_(rd_),
+      random_engine_(rd_()),
       buffer_size_(buffer_size),
       batch_size_(batch_size) {
 
