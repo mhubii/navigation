@@ -20,6 +20,8 @@ class QLearning {
 
         void Learn(states_batch& states, double gamma);
 
+        inline const DQN& GetTarget() const { return target_; };
+
     private:
 
         // Random device and random engine.

@@ -8,7 +8,7 @@
 
 QLearning::QLearning(torch::IntList input_shape, int64_t n_actions, int64_t batch_size, int64_t buffer_size, torch::Device device)
         : rd_(),
-          random_engine_(rd_),
+          random_engine_(rd_()),
         
           n_actions_(n_actions),
           batch_size_(batch_size),
@@ -16,7 +16,7 @@ QLearning::QLearning(torch::IntList input_shape, int64_t n_actions, int64_t batc
           
           policy_(input_shape, n_actions),
           target_(input_shape, n_actions),
-          opt_(policy_.parameters(), torch::optim::AdamOptions(0.001)),
+          opt_(policy_->parameters(), torch::optim::AdamOptions(0.001)),
 
           n_update_(0),
           n_steps_(0),
@@ -51,6 +51,12 @@ void QLearning::Step(state& state) {
         if (n_update_ % TARGET_UPDATE == 0) {
 
                 // Copy policy to target net.
+                torch::NoGradGuard no_grad;
+                
+                for (uint i = 0; i < target_->parameters().size(); i++) {
+
+                        target_->parameters()[i].copy_(policy_->parameters()[i]);
+                }
         }   
 }
 
@@ -65,14 +71,14 @@ torch::Tensor QLearning::Act(torch::Tensor left_in, torch::Tensor right_in, bool
 
         if (val > eps) {
 
-                torch::NoGradGuard();
+                torch::NoGradGuard no_grad;
 
-                return std::get<1>(policy_.forward(left_in, right_in).max(1));
+                return std::get<1>(policy_->forward(left_in, right_in).max(1)).view({1,1});
         }
 
         else {
 
-                return torch::full({1,1}, std::uniform_int_distribution<int>(0,n_actions_)(random_engine));
+                return torch::full({1,1}, std::uniform_int_distribution<int>(0,n_actions_)(random_engine_), torch::kLong);
         }
 }
 
@@ -88,10 +94,21 @@ void QLearning::Learn(states_batch& states, double gamma) {
         torch::Tensor& dones = states.dones;
 
         // Use policy net to pick action with highest reward.
-        torch::Tensor q_policy = policy_.forward(l_imgs, r_imgs);
+        torch::Tensor q_policy = policy_->forward(l_imgs, r_imgs).gather(1, actions); // expected rewards for actions Bx1xA maybe
 
         // Predict reward of taken actions.
-        //torch::Tensor q_next = rewards + gamma*policy_(l_imgs_next, r_imgs_next)
+        torch::Tensor q_target = rewards + gamma*(std::get<0>(target_->forward(l_imgs_next, r_imgs_next).max(1))*(1-dones)).detach();
 
-        //torch::Tensor q_
+        // Huber loss and optimize.
+        torch::Tensor loss = torch::smooth_l1_loss(q_target, q_policy);
+        opt_.zero_grad();
+        loss.backward();
+        
+        // Clamp parameters.
+        for (uint i = 0; i < policy_->parameters().size(); i++) {
+
+                torch::clamp(policy_->parameters()[i], -1., 1.);
+        }
+
+        opt_.step();
 }
