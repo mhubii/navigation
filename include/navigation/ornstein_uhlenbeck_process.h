@@ -8,20 +8,21 @@ class OUProcess {
 
     public:
 
-        OUProcess(at::IntList size, double mu, double theta, double sigma);
+        OUProcess(torch::IntList size, float mu, float theta, float sigma);
 
         void Reset();
 
         torch::Tensor Sample();
 
+        void print();
+
     private:
 
         // Parameters.
-        at::IntList size_;
         torch::Tensor mu_;
         torch::Tensor state_;
-        double theta_;
-        double sigma_;
+        float theta_;
+        float sigma_;
 };
 
 #endif

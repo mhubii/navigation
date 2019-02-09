@@ -63,25 +63,20 @@ public:
 
     void Add(state& state);
 
-    states_batch Sample();
+    states_batch Sample(torch::Device device);
 
     int64_t Length();
 
 private:
 
     // Random engine.
+    std::random_device rd_;
     std::mt19937 random_engine_;
 
     // Memory.
-    bool initialized_;
-
     int64_t buffer_size_;
     int64_t batch_size_;
     memory deque_;
-
-    // Shapes.
-    torch::IntList img_shape_;
-    torch::IntList action_shape_;
 };
 
 #endif
