@@ -1,36 +1,25 @@
 #include "replay_memory.h"
 
 ReplayMemory::ReplayMemory(int64_t buffer_size, int64_t batch_size)
-    : random_engine_(0),
-      initialized_(false),
+    : rd_(),
+      random_engine_(rd_),
       buffer_size_(buffer_size),
-      batch_size_(batch_size),
-      img_shape_(0),
-      action_shape_(0) {
+      batch_size_(batch_size) {
 
 }
 
 void ReplayMemory::Add(state& state) {
 
-    if (!initialized_) {
-
-        // Get shapes if not initialized.
-        img_shape_ = std::get<0>(state).sizes();
-        action_shape_ = std::get<2>(state).sizes();
-
-        initialized_ = true;
-    };
-
     // Add state to memory.
     if (deque_.size() == buffer_size_) {
-    
+
         deque_.pop_front();
     }
 
     deque_.push_back(state);
 }
 
-states_batch ReplayMemory::Sample() {
+states_batch ReplayMemory::Sample(torch::Device device) {
 
     // Generate random indices.
     std::vector<int> idx;
@@ -44,12 +33,17 @@ states_batch ReplayMemory::Sample() {
 	// Sample from deque.
 	if (deque_.size() > batch_size_) {
 
-		torch::Tensor left_imgs = torch::empty({batch_size_, img_shape_[1], img_shape_[2], img_shape_[3]});
-		torch::Tensor right_imgs = torch::empty({batch_size_, img_shape_[1], img_shape_[2], img_shape_[3]});
-        torch::Tensor actions = torch::empty({batch_size_, action_shape_[1]});
+        // Get the shapes. There are some issues with torch::IntList, thats why its done everytime.
+        torch::IntList img_shape = std::get<0>(deque_[0]).sizes();
+        torch::IntList action_shape = std::get<2>(deque_[0]).sizes();
+
+        // Allocate empty tensors.
+		torch::Tensor left_imgs = torch::empty({batch_size_, img_shape[1], img_shape[2], img_shape[3]});
+		torch::Tensor right_imgs = torch::empty({batch_size_, img_shape[1], img_shape[2], img_shape[3]});
+        torch::Tensor actions = torch::empty({batch_size_, action_shape[1]});
         torch::Tensor rewards = torch::empty({batch_size_, 1});
-        torch::Tensor next_left_imgs = torch::empty({batch_size_, img_shape_[1], img_shape_[2], img_shape_[3]});
-        torch::Tensor next_right_imgs = torch::empty({batch_size_, img_shape_[1], img_shape_[2], img_shape_[3]});
+        torch::Tensor next_left_imgs = torch::empty({batch_size_, img_shape[1], img_shape[2], img_shape[3]});
+        torch::Tensor next_right_imgs = torch::empty({batch_size_, img_shape[1], img_shape[2], img_shape[3]});
         torch::Tensor dones = torch::empty({batch_size_, 1});
 
 		for (int i = 0; i < batch_size_; i++) {
@@ -63,7 +57,7 @@ states_batch ReplayMemory::Sample() {
             dones.slice(0, i, i+1) = std::get<6>(deque_[idx[i]]);
 		}
 
-		return {left_imgs, right_imgs, actions, rewards, next_left_imgs, next_right_imgs, dones};
+		return {left_imgs.to(device), right_imgs.to(device), actions.to(device), rewards.to(device), next_left_imgs.to(device), next_right_imgs.to(device), dones.to(device)};
 	}
 
 	return {};
