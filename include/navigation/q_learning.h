@@ -1,66 +1,48 @@
-#pragma once
+#ifndef Q_LEARNING_H_
+#define Q_LEARNING_H_
 
-#include <stdint.h>
-#include <string>
-#include <deque>
-#include <tuple>
+#include <torch/torch.h>
+#include <math.h>
 
 #include "models.h"
+#include "replay_memory.h"
 
-namespace ql {
 
-    // Options for the optimization.
-    struct Options {
+class QLearning {
 
-        std::string data_root{"data"};
-        int32_t batch_size{64};
-        int32_t epochs{10};
-        double lr{0.01};
-        double momentum{0.5};
-        bool cuda{true};
-        int32_t seed{1};
-        int32_t test_batch_size{1000};
-        int32_t log_interval{10};
-    };
+    public:
 
-    // Viable actions to take.
-    enum Actions {
+        QLearning(torch::IntList input_shape, int64_t n_actions, int64_t batch_size, int64_t buffer_size, torch::Device device);
 
-        UP = 0,
-        DOWN = 1,
-        LEFT = 2,
-        RIGHT = 3,
-        ROTATE_LEFT = 4,
-        ROTATE_RIGHT = 5
-    };
+        void Step(state& state);
 
-    using memory = std::deque<std::tuple<torch::Tensor /*state*/, 
-                                        torch::Tensor /*action*/, 
-                                        torch::Tensor /*reward*/, 
-                                        torch::Tensor /*next_state*/>>;
+        torch::Tensor Act(torch::Tensor left_in, torch::Tensor right_in, bool train);
 
-    // Implements Q-Learning with variable model.
-    class QLearning {
+        void Learn(states_batch& states, double gamma);
 
-        public:
+    private:
 
-            QLearning(Model& policy_model, Model& target_model, 
-                      Actions& action, Options& options);
+        // Random device and random engine.
+        std::random_device rd_;
+        std::mt19937 random_engine_;
 
-            torch::Tensor Action(torch::Tensor& state);
+        int64_t n_actions_;
+        int64_t batch_size_;
 
-            torch::Tensor Reward(torch::Tensor& state, torch::Tensor& action);
+        // Device type, CPU/GPU.
+        torch::Device device_;
 
-            void Push();
+        // Network and related stuff.
+        DQN policy_;
+        DQN target_;
 
-            void Optimize();
+        torch::optim::Adam opt_;
 
-        private:
+        uint n_update_;
+        uint n_steps_;
 
-            // Replay memory.
-            memory replay_memory_;
+        ReplayMemory replay_memory_;
+        states_batch states_batch_;
+};
 
-            // Sample from replay_memory_.
-            memory Sample(uint32_t batch_size);
-    };
-} // namespace ql
+#endif
