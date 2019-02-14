@@ -2,7 +2,6 @@
 #define Q_LEARNING_H_
 
 #include <torch/torch.h>
-#include <math.h>
 
 #include "models.h"
 #include "replay_memory.h"
@@ -12,15 +11,17 @@ class QLearning {
 
     public:
 
-        QLearning(torch::IntList input_shape, int64_t n_actions, int64_t batch_size, int64_t buffer_size, torch::Device device);
+        QLearning(int64_t channel, int64_t height, int64_t width, int64_t n_actions, int64_t batch_size, int64_t buffer_size, torch::Device device);
 
         void Step(state& state);
 
         torch::Tensor Act(torch::Tensor left_in, torch::Tensor right_in, bool train);
 
-        void Learn(states_batch& states, double gamma);
+        void Learn(states_batch& states, float gamma);
 
         inline const DQN& GetTarget() const { return target_; };
+
+        inline const torch::Tensor& GetLoss() const { return loss_; };
 
     private:
 
@@ -45,6 +46,9 @@ class QLearning {
 
         ReplayMemory replay_memory_;
         states_batch states_batch_;
+
+        // Loss for one batch.
+        torch::Tensor loss_;
 };
 
 #endif
