@@ -24,7 +24,7 @@ QLearning::QLearning(int64_t channel, int64_t height, int64_t width, int64_t n_a
           replay_memory_(buffer_size, batch_size),
           states_batch_({}),
           
-          loss_(torch::zeros({1, 1}, device)) {
+          loss_(torch::zeros({}, device)) {
 
         policy_->to(device_);
         target_->to(device_);
