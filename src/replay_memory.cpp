@@ -14,9 +14,12 @@ void ReplayMemory::Add(state& state) {
     if (deque_.size() == buffer_size_) {
 
         deque_.pop_front();
+        deque_.push_back(state);
     }
+    else {
 
-    deque_.push_back(state);
+        deque_.push_back(state);
+    }
 }
 
 states_batch ReplayMemory::Sample(torch::Device device) {
@@ -38,13 +41,13 @@ states_batch ReplayMemory::Sample(torch::Device device) {
         torch::IntList action_shape = std::get<2>(deque_[0]).sizes();
 
         // Allocate empty tensors.
-		torch::Tensor left_imgs = torch::empty({batch_size_, img_shape[1], img_shape[2], img_shape[3]});
-		torch::Tensor right_imgs = torch::empty({batch_size_, img_shape[1], img_shape[2], img_shape[3]});
-        torch::Tensor actions = torch::empty({batch_size_, action_shape[1]});
-        torch::Tensor rewards = torch::empty({batch_size_, 1});
-        torch::Tensor next_left_imgs = torch::empty({batch_size_, img_shape[1], img_shape[2], img_shape[3]});
-        torch::Tensor next_right_imgs = torch::empty({batch_size_, img_shape[1], img_shape[2], img_shape[3]});
-        torch::Tensor dones = torch::empty({batch_size_, 1});
+		torch::Tensor left_imgs = torch::zeros({batch_size_, img_shape[1], img_shape[2], img_shape[3]}, std::get<0>(deque_[0]).type());
+		torch::Tensor right_imgs = torch::zeros({batch_size_, img_shape[1], img_shape[2], img_shape[3]}, std::get<1>(deque_[0]).type());
+        torch::Tensor actions = torch::zeros({batch_size_, action_shape[1]}, std::get<2>(deque_[0]).type());
+        torch::Tensor rewards = torch::zeros({batch_size_, 1}, std::get<3>(deque_[0]).type());
+        torch::Tensor next_left_imgs = torch::zeros({batch_size_, img_shape[1], img_shape[2], img_shape[3]}, std::get<4>(deque_[0]).type());
+        torch::Tensor next_right_imgs = torch::zeros({batch_size_, img_shape[1], img_shape[2], img_shape[3]}, std::get<5>(deque_[0]).type());
+        torch::Tensor dones = torch::zeros({batch_size_, 1}, std::get<6>(deque_[0]).type());
 
 		for (int i = 0; i < batch_size_; i++) {
 
