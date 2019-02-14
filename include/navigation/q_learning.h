@@ -21,7 +21,7 @@ class QLearning {
 
         inline const DQN& GetTarget() const { return target_; };
 
-        inline const torch::Tensor& GetLoss() const { return loss_; };
+        inline const float GetLoss() const { return *(loss_.to(torch::kCPU).data<float>()); };
 
     private:
 
