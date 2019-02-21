@@ -302,13 +302,17 @@ class DQNImpl : public torch::nn::Module {
     public:
 
         // Constructor.
-        DQNImpl(at::IntList input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t n_actions)
+        DQNImpl(int64_t channel, int64_t height, int64_t width, int64_t n_actions)
             : // Left layers.
               left_conv1_(register_module("left_conv1", torch::nn::Conv2d(torch::nn::Conv2dOptions(3, 8, 5).stride(2)))),
               left_conv2_(register_module("left_conv2", torch::nn::Conv2d(torch::nn::Conv2dOptions(8, 16, 5).stride(2)))),
               left_conv3_(register_module("left_conv3", torch::nn::Conv2d(torch::nn::Conv2dOptions(16, 32, 3).stride(2)))),
 
-              left_fc1_(register_module("left_fc1", torch::nn::Linear(GetConvOutput(input_shape), 16))),
+              //left_bn1_(register_module("left_bn1", torch::nn::BatchNorm(8))),
+              //left_bn2_(register_module("left_bn2", torch::nn::BatchNorm(16))),
+              //left_bn3_(register_module("left_bn3", torch::nn::BatchNorm(32))),
+
+              left_fc1_(register_module("left_fc1", torch::nn::Linear(GetConvOutput(channel, height, width), 16))),
               left_fc2_(register_module("left_fc2", torch::nn::Linear(16, 8))),
               left_fc3_(register_module("left_fc3", torch::nn::Linear(8, n_actions))),
 
@@ -317,7 +321,11 @@ class DQNImpl : public torch::nn::Module {
               right_conv2_(register_module("right_conv2", torch::nn::Conv2d(torch::nn::Conv2dOptions(8, 16, 5).stride(2)))),
               right_conv3_(register_module("right_conv3", torch::nn::Conv2d(torch::nn::Conv2dOptions(16, 32, 3).stride(2)))),
 
-              right_fc1_(register_module("right_fc1", torch::nn::Linear(GetConvOutput(input_shape), 16))),
+              //right_bn1_(register_module("right_bn1", torch::nn::BatchNorm(8))),
+              //right_bn2_(register_module("right_bn2", torch::nn::BatchNorm(16))),
+              //right_bn3_(register_module("right_bn3", torch::nn::BatchNorm(32))),
+
+              right_fc1_(register_module("right_fc1", torch::nn::Linear(GetConvOutput(channel, height, width), 16))),
               right_fc2_(register_module("right_fc2", torch::nn::Linear(16, 8))),
               right_fc3_(register_module("right_fc3", torch::nn::Linear(8, n_actions))) {
 
@@ -361,6 +369,10 @@ class DQNImpl : public torch::nn::Module {
         torch::nn::Conv2d left_conv2_;
         torch::nn::Conv2d left_conv3_;
 
+        //torch::nn::BatchNorm left_bn1_;
+        //torch::nn::BatchNorm left_bn2_;
+        //torch::nn::BatchNorm left_bn3_;
+
         torch::nn::Linear left_fc1_;
         torch::nn::Linear left_fc2_;
         torch::nn::Linear left_fc3_;
@@ -370,14 +382,18 @@ class DQNImpl : public torch::nn::Module {
         torch::nn::Conv2d right_conv2_;
         torch::nn::Conv2d right_conv3_;
 
+        //torch::nn::BatchNorm right_bn1_;
+        //torch::nn::BatchNorm right_bn2_;
+        //torch::nn::BatchNorm right_bn3_;
+
         torch::nn::Linear right_fc1_;
         torch::nn::Linear right_fc2_;
         torch::nn::Linear right_fc3_;
 
         // Get number of elements of output.
-        int64_t GetConvOutput(at::IntList input_shape) {
+        int64_t GetConvOutput(int64_t channel, int64_t height, int64_t width) {
 
-            torch::Tensor in = torch::zeros(input_shape, torch::kFloat).unsqueeze(0);
+            torch::Tensor in = torch::zeros({channel, height, width}, torch::kFloat).unsqueeze(0);
             torch::Tensor out = ForwardConv(in);
 
             return out.numel();
