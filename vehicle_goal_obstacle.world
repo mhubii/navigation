@@ -2,6 +2,13 @@
 <sdf version="1.6">
 <world name="vehicle_world">
 
+<!-- Speed Up -->
+<physics type="ode">
+  <real_time_update_rate>10000</real_time_update_rate>
+  <real_time_update_rate>0.000000</real_time_update_rate>
+  <max_step_size>0.00025</max_step_size>
+</physics>
+
 <!-- Sun -->
 <include>
   <uri>model://sun</uri>
