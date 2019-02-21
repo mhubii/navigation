@@ -63,9 +63,3 @@ install(FILES ${NAVIGATION_INCLUDES} DESTINATION include/navigation)
 # Uninstall directives.
 add_custom_target (uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/navigation_uninstall.cmake)
 
-
-
-
-
-
-
