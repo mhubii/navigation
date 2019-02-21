@@ -4,7 +4,7 @@
 #define TARGET_UPDATE 100
 #define EPS_START 0.9f
 #define EPS_END 0.05f
-#define EPS_DECAY 1000
+#define EPS_DECAY 10000
 
 QLearning::QLearning(int64_t channel, int64_t height, int64_t width, int64_t n_actions, int64_t batch_size, int64_t buffer_size, torch::Device device)
         : rd_(),
