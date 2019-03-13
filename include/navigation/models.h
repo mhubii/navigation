@@ -2,6 +2,7 @@
 #define MODELS_H_ 
 
 #include <torch/torch.h>
+#include <math.h>
 
 // Implements a convolutional neural net for stereo inputs. It maps states to actions.
 class Actor : public torch::nn::Module {
@@ -410,5 +411,250 @@ class DQNImpl : public torch::nn::Module {
 };
 
 TORCH_MODULE(DQN);
+
+// Network model for Proximal Policy Optimization with Nonlinear Model Predictive Control.
+struct ActorCriticImpl : public torch::nn::Module 
+{
+    // Actor.
+    torch::Tensor mu_;
+    torch::Tensor std_;
+
+    // Left layers.
+    torch::nn::Conv2d a_left_conv1_, a_left_conv2_, a_left_conv3_;
+    torch::nn::Linear a_left_fc1_, a_left_fc2_, a_left_fc3_;
+
+    // Right layers.
+    torch::nn::Conv2d a_right_conv1_, a_right_conv2_, a_right_conv3_;
+    torch::nn::Linear a_right_fc1_, a_right_fc2_, a_right_fc3_;
+
+    // Critic.
+    torch::nn::Linear c_val_;
+
+    // Left layers.
+    torch::nn::Conv2d c_left_conv1_, c_left_conv2_, c_left_conv3_;
+    torch::nn::Linear c_left_fc1_, c_left_fc2_, c_left_fc3_;
+
+    // Right layers.
+    torch::nn::Conv2d c_right_conv1_, c_right_conv2_, c_right_conv3_;
+    torch::nn::Linear c_right_fc1_, c_right_fc2_, c_right_fc3_;
+
+    ActorCriticImpl(int64_t channel, int64_t height, int64_t width, int64_t n_actions, double std)
+        : // Actor.
+          mu_(torch::full(n_actions, 0.)),
+          std_(torch::full(n_actions, std, torch::kFloat64)),
+
+          // Left layers.
+          a_left_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)), 
+          a_left_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)), 
+          a_left_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
+          
+          a_left_fc1_(GetConvOutput(channel, height, width), 16), 
+          a_left_fc2_(16, 8), 
+          a_left_fc3_(8, n_actions),
+
+          // Right layers.
+          a_right_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)), 
+          a_right_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)), 
+          a_right_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
+
+          a_right_fc1_(GetConvOutput(channel, height, width), 16), 
+          a_right_fc2_(16, 8), 
+          a_right_fc3_(8, n_actions),
+          
+          // Critic
+          c_val_(torch::nn::Linear(n_actions, 1)),
+
+          // Left layers.
+          c_left_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)), 
+          c_left_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)), 
+          c_left_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
+          
+          c_left_fc1_(GetConvOutput(channel, height, width), 16), 
+          c_left_fc2_(16, 8), 
+          c_left_fc3_(8, n_actions),
+
+          // Right lcyers.
+          c_right_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)), 
+          c_right_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)), 
+          c_right_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
+
+          c_right_fc1_(GetConvOutput(channel, height, width), 16), 
+          c_right_fc2_(16, 8), 
+          c_right_fc3_(8, n_actions)
+    {
+        // Register the modules and parameters.
+        // Actor.
+        register_parameter("std", std_);
+
+        // Left layers.
+        register_module("a_left_conv1", a_left_conv1_);
+        register_module("a_left_conv2", a_left_conv2_);
+        register_module("a_left_conv3", a_left_conv3_);
+
+        register_module("a_left_fc1", a_left_fc1_);
+        register_module("a_left_fc2", a_left_fc2_);
+        register_module("a_left_fc3", a_left_fc3_);
+
+        // Right layers.
+        register_module("a_right_conv1", a_right_conv1_);
+        register_module("a_right_conv2", a_right_conv2_);
+        register_module("a_right_conv3", a_right_conv3_);
+
+        register_module("a_right_fc1", a_right_fc1_);
+        register_module("a_right_fc2", a_right_fc2_);
+        register_module("a_right_fc3", a_right_fc3_);
+
+        // Critic.
+        register_module("c_val", c_val_);
+
+        // Left layers.
+        register_module("a_left_conv1", a_left_conv1_);
+        register_module("a_left_conv2", a_left_conv2_);
+        register_module("a_left_conv3", a_left_conv3_);
+
+        register_module("a_left_fc1", a_left_fc1_);
+        register_module("a_left_fc2", a_left_fc2_);
+        register_module("a_left_fc3", a_left_fc3_);
+
+        // Right layers.
+        register_module("a_right_conv1", a_right_conv1_);
+        register_module("a_right_conv2", a_right_conv2_);
+        register_module("a_right_conv3", a_right_conv3_);
+
+        register_module("a_right_fc1", a_right_fc1_);
+        register_module("a_right_fc2", a_right_fc2_);
+        register_module("a_right_fc3", a_right_fc3_);
+    }
+
+    // Forward pass.
+    auto forward(torch::Tensor left_in, torch::Tensor right_in) -> std::tuple<torch::Tensor, torch::Tensor> 
+    {
+
+        // Actor.
+        // Left layers.
+        torch::Tensor a_left = torch::relu(a_left_conv1_->forward(left_in));
+        a_left = torch::relu(a_left_conv2_->forward(a_left));
+        a_left = torch::tanh(a_left_conv3_->forward(a_left));
+
+        // Flatten.
+        a_left = a_left.view({a_left.sizes()[0], -1});
+
+        a_left = torch::relu(a_left_fc1_->forward(a_left));
+        a_left = torch::relu(a_left_fc2_->forward(a_left));
+        a_left = torch::relu(a_left_fc3_->forward(a_left));
+
+        // Right layers.
+        torch::Tensor a_right = torch::relu(a_right_conv1_->forward(right_in));
+        a_right = torch::relu(a_right_conv2_->forward(a_right));
+        a_right = torch::tanh(a_right_conv3_->forward(a_right));
+
+        // Flatten.
+        a_right = right_in.view({a_right.sizes()[0], -1});
+
+        a_right = torch::relu(a_right_fc1_->forward(a_right));
+        a_right = torch::relu(a_right_fc2_->forward(a_right));
+        a_right = torch::relu(a_right_fc3_->forward(a_right));
+
+        mu_ = (a_left + a_right).div(2.);
+
+        // Critic.
+        // Left layers.
+        torch::Tensor c_left = torch::relu(c_left_conv1_->forward(left_in));
+        c_left = torch::relu(c_left_conv2_->forward(c_left));
+        c_left = torch::tanh(c_left_conv3_->forward(c_left));
+
+        // Flatten.
+        c_left = c_left.view({c_left.sizes()[0], -1});
+
+        c_left = torch::relu(c_left_fc1_->forward(c_left));
+        c_left = torch::relu(c_left_fc2_->forward(c_left));
+        c_left = torch::relu(c_left_fc3_->forward(c_left));
+
+        // Right layers.
+        torch::Tensor c_right = torch::relu(c_right_conv1_->forward(right_in));
+        c_right = torch::relu(c_right_conv2_->forward(c_right));
+        c_right = torch::tanh(c_right_conv3_->forward(c_right));
+
+        // Flatten.
+        c_right = c_right.view({c_right.sizes()[0], -1});
+
+        c_right = torch::relu(c_right_fc1_->forward(c_right));
+        c_right = torch::relu(c_right_fc2_->forward(c_right));
+        c_right = torch::relu(c_right_fc3_->forward(c_right));
+
+        torch::Tensor val = (c_left + c_right).div(2.);
+
+        // Value layer.
+        val = c_val_->forward(val);
+
+        if (this->is_training()) 
+        {
+            torch::NoGradGuard no_grad;
+
+            torch::Tensor action = torch::normal(mu_, std_.abs().expand_as(mu_));
+            return std::make_tuple(action, val);  
+        }
+        else 
+        {
+            return std::make_tuple(mu_, val);  
+        }
+    }
+
+    // Initialize network.
+    void normal(double mu, double std) 
+    {
+        torch::NoGradGuard no_grad;
+
+        for (auto& p: this->parameters()) 
+        {
+            p.normal_(mu,std);
+        }         
+    }
+
+    void zero() 
+    {
+        torch::NoGradGuard no_grad;
+
+        for (auto& p: this->parameters()) 
+        {
+            p.zero_();
+        }         
+    }
+
+    auto entropy() -> torch::Tensor
+    {
+        // Differential entropy of normal distribution. For reference https://pytorch.org/docs/stable/_modules/torch/distributions/normal.html#Normal
+        return 0.5 + 0.5*log(2*M_PI) + std_.abs().log();
+    }
+
+    auto log_prob(torch::Tensor action) -> torch::Tensor
+    {
+        // Logarithmic probability of taken action, given the current distribution.
+        torch::Tensor var = std_*std_;
+        torch::Tensor log_scale = std_.abs().log();
+
+        return -((action - mu_)*(action - mu_))/(2*var) - log_scale - log(sqrt(2*M_PI));
+    }
+
+    // Get number of elements of output.
+    int64_t GetConvOutput(int64_t channel, int64_t height, int64_t width) {
+
+        torch::Tensor in = torch::zeros({channel, height, width}, torch::kFloat).unsqueeze(0);
+        torch::Tensor out = ForwardConv(in);
+
+        return out.numel();
+    };
+
+    torch::Tensor ForwardConv(torch::Tensor in) {
+
+        in = torch::relu(a_left_conv1_->forward(in));
+        in = torch::relu(a_left_conv2_->forward(in));
+        in = torch::relu(a_left_conv3_->forward(in));
+        
+        return in;
+    };
+};
+
+TORCH_MODULE(ActorCritic);
 
 #endif // MODELS_H_
