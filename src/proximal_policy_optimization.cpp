@@ -19,7 +19,8 @@ auto PPO::returns(VT& rewards, VT& dones, VT& vals, double gamma, double lambda)
 }
 
 auto PPO::update(ActorCritic& ac,
-                 torch::Tensor& states,
+                 torch::Tensor& left_states,
+                 torch::Tensor& right_states,
                  torch::Tensor& actions,
                  torch::Tensor& log_probs,
                  torch::Tensor& returns,
@@ -40,10 +41,10 @@ auto PPO::update(ActorCritic& ac,
 
         for (auto& i: idx)
         {
-            auto av = ac.forward(states[i]); // action value pairs
+            auto av = ac->forward(left_states[i], right_states[i]); // action value pairs
             auto action = std::get<0>(av);
-            auto entropy = ac.entropy();
-            auto new_log_prob = ac.log_prob(actions[i]);
+            auto entropy = ac->entropy();
+            auto new_log_prob = ac->log_prob(actions[i]);
 
             auto old_log_prob = log_probs[i];
             auto ratio = (new_log_prob - old_log_prob).exp();
