@@ -31,12 +31,14 @@ if (${BUILD_WITH_TORCH})
   include_directories(${Torch_INCLUDE_DIRS})
   include_directories(${OpenCV_INCLUDE_DIRS})
 
-  list(APPEND NAVIGATION_SRCS ${NAVIGATION_SRC_DIR}/q_learning.cpp  
+  list(APPEND NAVIGATION_SRCS ${NAVIGATION_SRC_DIR}/proximal_policy_optimization.cpp
+                              ${NAVIGATION_SRC_DIR}/q_learning.cpp  
                               ${NAVIGATION_SRC_DIR}/replay_memory.cpp 
                               ${NAVIGATION_SRC_DIR}/ornstein_uhlenbeck_process.cpp
                               ${NAVIGATION_SRC_DIR}/ddpg_continuous_control.cpp)
   
-  list(APPEND NAVIGATION_INCLUDES ${NAVIGATION_INCLUDE_DIR}/q_learning.h 
+  list(APPEND NAVIGATION_INCLUDES ${NAVIGATION_INCLUDE_DIR}/proximal_policy_optimization.h
+                                  ${NAVIGATION_INCLUDE_DIR}/q_learning.h 
                                   ${NAVIGATION_INCLUDE_DIR}/replay_memory.h 
                                   ${NAVIGATION_INCLUDE_DIR}/models.h 
                                   ${NAVIGATION_INCLUDE_DIR}/ornstein_uhlenbeck_process.h
