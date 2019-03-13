@@ -73,16 +73,33 @@ torch::Tensor QLearning::Act(torch::Tensor left_in, torch::Tensor right_in, bool
         // Get action with highest future expected reward policy with some randomness.
         float val = std::uniform_real_distribution<float>(0., 1.)(random_engine_);
 
-        if (val > eps) {
+        if (train) {
+            
+                if (val > eps) {
 
-                torch::NoGradGuard no_grad;
+                        torch::NoGradGuard no_grad;
 
-                return std::get<1>(policy_->forward(left_in.to(device_), right_in.to(device_)).max(1)).view({1,1});
+                        return std::get<1>(policy_->forward(left_in.to(device_), right_in.to(device_)).max(1)).view({1,1});
+                }
+
+                else {
+                
+                        return torch::full({1,1}, std::uniform_int_distribution<int>(0,n_actions_-1)(random_engine_), torch::kLong);
+                }
         }
-
         else {
-        
-                return torch::full({1,1}, std::uniform_int_distribution<int>(0,n_actions_-1)(random_engine_), torch::kLong);
+
+                if (val > EPS_END) {
+
+                        torch::NoGradGuard no_grad;
+
+                        return std::get<1>(policy_->forward(left_in.to(device_), right_in.to(device_)).max(1)).view({1,1});
+                }
+
+                else {
+                
+                        return torch::full({1,1}, std::uniform_int_distribution<int>(0,n_actions_-1)(random_engine_), torch::kLong);
+                }
         }
 }
 
@@ -115,4 +132,15 @@ void QLearning::Learn(states_batch& states, float gamma) {
         }
 
         opt_.step();
+}
+
+void QLearning::SetPolicy(DQN& dqn) {
+
+        // Copy policy to target net.
+        torch::NoGradGuard no_grad;
+        
+        for (uint i = 0; i < policy_->parameters().size(); i++) {
+
+                policy_->parameters()[i].copy_(dqn->parameters()[i]);
+        }
 }

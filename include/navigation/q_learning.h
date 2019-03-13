@@ -21,6 +21,8 @@ class QLearning {
 
         inline const DQN& GetTarget() const { return target_; };
 
+        void SetPolicy(DQN& dqn);
+
         inline const float GetLoss() const { return *(loss_.to(torch::kCPU).data<float>()); };
 
     private:
