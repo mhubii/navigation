@@ -3,8 +3,8 @@
 auto PPO::returns(VT& rewards, VT& dones, VT& vals, double gamma, double lambda) -> VT
 {
     // Compute the returns.
-    torch::Tensor gae = torch::zeros({1}, torch::kFloat64);
-    VT returns(rewards.size(), torch::zeros({1}, torch::kFloat64));
+    torch::Tensor gae = torch::zeros({1}, torch::kFloat32);
+    VT returns(rewards.size(), torch::zeros({1}, torch::kFloat32));
 
     for (uint i=rewards.size();i-- >0;) // inverse for loops over unsigned: https://stackoverflow.com/questions/665745/whats-the-best-way-to-do-a-reverse-for-loop-with-an-unsigned-index/665773
     {
