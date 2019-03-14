@@ -413,30 +413,50 @@ class DQNImpl : public torch::nn::Module {
 TORCH_MODULE(DQN);
 
 // Network model for Proximal Policy Optimization with Nonlinear Model Predictive Control.
-struct ActorCriticImpl : public torch::nn::Module 
+class ActorCriticImpl : public torch::nn::Module 
 {
     // Actor.
     torch::Tensor mu_;
     torch::Tensor std_;
 
     // Left layers.
-    torch::nn::Conv2d a_left_conv1_, a_left_conv2_, a_left_conv3_;
-    torch::nn::Linear a_left_fc1_, a_left_fc2_, a_left_fc3_;
+    torch::nn::Conv2d a_left_conv1_{nullptr}, a_left_conv2_{nullptr}, a_left_conv3_{nullptr};
+    torch::nn::Linear a_left_fc1_{nullptr}, a_left_fc2_{nullptr}, a_left_fc3_{nullptr};
 
     // Right layers.
-    torch::nn::Conv2d a_right_conv1_, a_right_conv2_, a_right_conv3_;
-    torch::nn::Linear a_right_fc1_, a_right_fc2_, a_right_fc3_;
+    torch::nn::Conv2d a_right_conv1_{nullptr}, a_right_conv2_{nullptr}, a_right_conv3_{nullptr};
+    torch::nn::Linear a_right_fc1_{nullptr}, a_right_fc2_{nullptr}, a_right_fc3_{nullptr};
 
     // Critic.
-    torch::nn::Linear c_val_;
+    torch::nn::Linear c_val_{nullptr};
 
     // Left layers.
-    torch::nn::Conv2d c_left_conv1_, c_left_conv2_, c_left_conv3_;
-    torch::nn::Linear c_left_fc1_, c_left_fc2_, c_left_fc3_;
+    torch::nn::Conv2d c_left_conv1_{nullptr}, c_left_conv2_{nullptr}, c_left_conv3_{nullptr};
+    torch::nn::Linear c_left_fc1_{nullptr}, c_left_fc2_{nullptr}, c_left_fc3_{nullptr};
 
     // Right layers.
-    torch::nn::Conv2d c_right_conv1_, c_right_conv2_, c_right_conv3_;
-    torch::nn::Linear c_right_fc1_, c_right_fc2_, c_right_fc3_;
+    torch::nn::Conv2d c_right_conv1_{nullptr}, c_right_conv2_{nullptr}, c_right_conv3_{nullptr};
+    torch::nn::Linear c_right_fc1_{nullptr}, c_right_fc2_{nullptr}, c_right_fc3_{nullptr};
+
+    // Get number of elements of output.
+    int64_t GetConvOutput(int64_t channel, int64_t height, int64_t width) {
+
+        torch::Tensor in = torch::zeros({channel, height, width}, torch::kFloat).unsqueeze(0);
+        torch::Tensor out = ForwardConv(in);
+
+        return out.numel();
+    };
+
+    torch::Tensor ForwardConv(torch::Tensor in) {
+
+        in = torch::relu(a_left_conv1_->forward(in));
+        in = torch::relu(a_left_conv2_->forward(in));
+        in = torch::relu(a_left_conv3_->forward(in));
+        
+        return in;
+    };
+
+public:
 
     ActorCriticImpl(int64_t channel, int64_t height, int64_t width, int64_t n_actions, double std)
         : // Actor.
@@ -508,23 +528,25 @@ struct ActorCriticImpl : public torch::nn::Module
         register_module("c_val", c_val_);
 
         // Left layers.
-        register_module("a_left_conv1", a_left_conv1_);
-        register_module("a_left_conv2", a_left_conv2_);
-        register_module("a_left_conv3", a_left_conv3_);
+        register_module("c_left_conv1", c_left_conv1_);
+        register_module("c_left_conv2", c_left_conv2_);
+        register_module("c_left_conv3", c_left_conv3_);
 
-        register_module("a_left_fc1", a_left_fc1_);
-        register_module("a_left_fc2", a_left_fc2_);
-        register_module("a_left_fc3", a_left_fc3_);
+        register_module("c_left_fc1", c_left_fc1_);
+        register_module("c_left_fc2", c_left_fc2_);
+        register_module("c_left_fc3", c_left_fc3_);
 
         // Right layers.
-        register_module("a_right_conv1", a_right_conv1_);
-        register_module("a_right_conv2", a_right_conv2_);
-        register_module("a_right_conv3", a_right_conv3_);
+        register_module("c_right_conv1", c_right_conv1_);
+        register_module("c_right_conv2", c_right_conv2_);
+        register_module("c_right_conv3", c_right_conv3_);
 
-        register_module("a_right_fc1", a_right_fc1_);
-        register_module("a_right_fc2", a_right_fc2_);
-        register_module("a_right_fc3", a_right_fc3_);
+        register_module("c_right_fc1", c_right_fc1_);
+        register_module("c_right_fc2", c_right_fc2_);
+        register_module("c_right_fc3", c_right_fc3_);
     }
+
+    ActorCriticImpl() = default;
 
     // Forward pass.
     auto forward(torch::Tensor left_in, torch::Tensor right_in) -> std::tuple<torch::Tensor, torch::Tensor> 
@@ -635,24 +657,6 @@ struct ActorCriticImpl : public torch::nn::Module
 
         return -((action - mu_)*(action - mu_))/(2*var) - log_scale - log(sqrt(2*M_PI));
     }
-
-    // Get number of elements of output.
-    int64_t GetConvOutput(int64_t channel, int64_t height, int64_t width) {
-
-        torch::Tensor in = torch::zeros({channel, height, width}, torch::kFloat).unsqueeze(0);
-        torch::Tensor out = ForwardConv(in);
-
-        return out.numel();
-    };
-
-    torch::Tensor ForwardConv(torch::Tensor in) {
-
-        in = torch::relu(a_left_conv1_->forward(in));
-        in = torch::relu(a_left_conv2_->forward(in));
-        in = torch::relu(a_left_conv3_->forward(in));
-        
-        return in;
-    };
 };
 
 TORCH_MODULE(ActorCritic);
