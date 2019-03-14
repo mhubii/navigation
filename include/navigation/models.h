@@ -458,10 +458,10 @@ class ActorCriticImpl : public torch::nn::Module
 
 public:
 
-    ActorCriticImpl(int64_t channel, int64_t height, int64_t width, int64_t n_actions, double std)
+    ActorCriticImpl(int64_t channel, int64_t height, int64_t width, int64_t n_actions, float std)
         : // Actor.
           mu_(torch::full(n_actions, 0.)),
-          std_(torch::full(n_actions, std, torch::kFloat64)),
+          std_(torch::full(n_actions, std)),
 
           // Left layers.
           a_left_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)), 
@@ -556,26 +556,26 @@ public:
         // Left layers.
         torch::Tensor a_left = torch::relu(a_left_conv1_->forward(left_in));
         a_left = torch::relu(a_left_conv2_->forward(a_left));
-        a_left = torch::tanh(a_left_conv3_->forward(a_left));
+        a_left = torch::relu(a_left_conv3_->forward(a_left));
 
         // Flatten.
         a_left = a_left.view({a_left.sizes()[0], -1});
 
         a_left = torch::relu(a_left_fc1_->forward(a_left));
         a_left = torch::relu(a_left_fc2_->forward(a_left));
-        a_left = torch::relu(a_left_fc3_->forward(a_left));
+        a_left = torch::tanh(a_left_fc3_->forward(a_left));
 
         // Right layers.
         torch::Tensor a_right = torch::relu(a_right_conv1_->forward(right_in));
         a_right = torch::relu(a_right_conv2_->forward(a_right));
-        a_right = torch::tanh(a_right_conv3_->forward(a_right));
+        a_right = torch::relu(a_right_conv3_->forward(a_right));
 
         // Flatten.
-        a_right = right_in.view({a_right.sizes()[0], -1});
+        a_right = a_right.view({a_right.sizes()[0], -1});
 
         a_right = torch::relu(a_right_fc1_->forward(a_right));
         a_right = torch::relu(a_right_fc2_->forward(a_right));
-        a_right = torch::relu(a_right_fc3_->forward(a_right));
+        a_right = torch::tanh(a_right_fc3_->forward(a_right));
 
         mu_ = (a_left + a_right).div(2.);
 
@@ -583,26 +583,26 @@ public:
         // Left layers.
         torch::Tensor c_left = torch::relu(c_left_conv1_->forward(left_in));
         c_left = torch::relu(c_left_conv2_->forward(c_left));
-        c_left = torch::tanh(c_left_conv3_->forward(c_left));
+        c_left = torch::relu(c_left_conv3_->forward(c_left));
 
         // Flatten.
         c_left = c_left.view({c_left.sizes()[0], -1});
 
         c_left = torch::relu(c_left_fc1_->forward(c_left));
         c_left = torch::relu(c_left_fc2_->forward(c_left));
-        c_left = torch::relu(c_left_fc3_->forward(c_left));
+        c_left = torch::tanh(c_left_fc3_->forward(c_left));
 
         // Right layers.
         torch::Tensor c_right = torch::relu(c_right_conv1_->forward(right_in));
         c_right = torch::relu(c_right_conv2_->forward(c_right));
-        c_right = torch::tanh(c_right_conv3_->forward(c_right));
+        c_right = torch::relu(c_right_conv3_->forward(c_right));
 
         // Flatten.
         c_right = c_right.view({c_right.sizes()[0], -1});
 
         c_right = torch::relu(c_right_fc1_->forward(c_right));
         c_right = torch::relu(c_right_fc2_->forward(c_right));
-        c_right = torch::relu(c_right_fc3_->forward(c_right));
+        c_right = torch::tanh(c_right_fc3_->forward(c_right));
 
         torch::Tensor val = (c_left + c_right).div(2.);
 
@@ -623,7 +623,7 @@ public:
     }
 
     // Initialize network.
-    void normal(double mu, double std) 
+    void normal(float mu, float std) 
     {
         torch::NoGradGuard no_grad;
 
