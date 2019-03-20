@@ -27,6 +27,6 @@ public:
                        torch::Tensor& returns,
                        torch::Tensor& advantages, 
                        OPT& opt, 
-                       uint steps, uint epochs, uint mini_batch_size, double clip_param=.2) -> void;
+                       uint steps, uint epochs, uint mini_batch_size, double beta, double clip_param=.2) -> void;
 };
 

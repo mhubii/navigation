@@ -417,7 +417,8 @@ class ActorCriticImpl : public torch::nn::Module
 {
     // Actor.
     torch::Tensor mu_;
-    torch::Tensor std_;
+    torch::Tensor log_std_;
+    float mu_max_;
 
     // Left layers.
     torch::nn::Conv2d a_left_conv1_{nullptr}, a_left_conv2_{nullptr}, a_left_conv3_{nullptr};
@@ -458,24 +459,25 @@ class ActorCriticImpl : public torch::nn::Module
 
 public:
 
-    ActorCriticImpl(int64_t channel, int64_t height, int64_t width, int64_t n_actions, float std)
+    ActorCriticImpl(int64_t channel, int64_t height, int64_t width, int64_t n_actions, float mu_max, float std)
         : // Actor.
           mu_(torch::full(n_actions, 0.)),
-          std_(torch::full(n_actions, std)),
+          log_std_(torch::full(n_actions, std)),
+          mu_max_(mu_max),
 
           // Left layers.
-          a_left_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)), 
-          a_left_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)), 
-          a_left_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
+          a_left_conv1_(torch::nn::Conv2dOptions(3, 32, 5).stride(2)), 
+          a_left_conv2_(torch::nn::Conv2dOptions(32, 64, 5).stride(2)), 
+          a_left_conv3_(torch::nn::Conv2dOptions(64, 128, 3).stride(2)),
           
           a_left_fc1_(GetConvOutput(channel, height, width), 16), 
           a_left_fc2_(16, 8), 
           a_left_fc3_(8, n_actions),
 
           // Right layers.
-          a_right_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)), 
-          a_right_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)), 
-          a_right_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
+          a_right_conv1_(torch::nn::Conv2dOptions(3, 32, 5).stride(2)), 
+          a_right_conv2_(torch::nn::Conv2dOptions(32, 64, 5).stride(2)), 
+          a_right_conv3_(torch::nn::Conv2dOptions(64, 128, 3).stride(2)),
 
           a_right_fc1_(GetConvOutput(channel, height, width), 16), 
           a_right_fc2_(16, 8), 
@@ -485,18 +487,18 @@ public:
           c_val_(torch::nn::Linear(n_actions, 1)),
 
           // Left layers.
-          c_left_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)), 
-          c_left_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)), 
-          c_left_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
+          c_left_conv1_(torch::nn::Conv2dOptions(3, 32, 5).stride(2)), 
+          c_left_conv2_(torch::nn::Conv2dOptions(32, 64, 5).stride(2)), 
+          c_left_conv3_(torch::nn::Conv2dOptions(64, 128, 3).stride(2)),
           
           c_left_fc1_(GetConvOutput(channel, height, width), 16), 
           c_left_fc2_(16, 8), 
           c_left_fc3_(8, n_actions),
 
           // Right lcyers.
-          c_right_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)), 
-          c_right_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)), 
-          c_right_conv3_(torch::nn::Conv2dOptions(16, 32, 3).stride(2)),
+          c_right_conv1_(torch::nn::Conv2dOptions(3, 32, 5).stride(2)), 
+          c_right_conv2_(torch::nn::Conv2dOptions(32, 64, 5).stride(2)), 
+          c_right_conv3_(torch::nn::Conv2dOptions(64, 128, 3).stride(2)),
 
           c_right_fc1_(GetConvOutput(channel, height, width), 16), 
           c_right_fc2_(16, 8), 
@@ -504,7 +506,7 @@ public:
     {
         // Register the modules and parameters.
         // Actor.
-        register_parameter("std", std_);
+        register_parameter("log_std", log_std_);
 
         // Left layers.
         register_module("a_left_conv1", a_left_conv1_);
@@ -577,7 +579,7 @@ public:
         a_right = torch::relu(a_right_fc2_->forward(a_right));
         a_right = torch::tanh(a_right_fc3_->forward(a_right));
 
-        mu_ = (a_left + a_right).div(2.);
+        mu_ = (a_left + a_right).div(2.).mul(mu_max_);
 
         // Critic.
         // Left layers.
@@ -604,7 +606,7 @@ public:
         c_right = torch::relu(c_right_fc2_->forward(c_right));
         c_right = torch::tanh(c_right_fc3_->forward(c_right));
 
-        torch::Tensor val = (c_left + c_right).div(2.);
+        torch::Tensor val = (c_left + c_right).div(2.).mul(mu_max_);
 
         // Value layer.
         val = c_val_->forward(val);
@@ -613,7 +615,7 @@ public:
         {
             torch::NoGradGuard no_grad;
 
-            torch::Tensor action = torch::normal(mu_, std_.abs().expand_as(mu_));
+            torch::Tensor action = torch::normal(mu_, log_std_.exp().expand_as(mu_));
             return std::make_tuple(action, val);  
         }
         else 
@@ -646,16 +648,15 @@ public:
     auto entropy() -> torch::Tensor
     {
         // Differential entropy of normal distribution. For reference https://pytorch.org/docs/stable/_modules/torch/distributions/normal.html#Normal
-        return 0.5 + 0.5*log(2*M_PI) + std_.abs().log();
+        return 0.5 + 0.5*log(2*M_PI) + log_std_;
     }
 
     auto log_prob(torch::Tensor action) -> torch::Tensor
     {
         // Logarithmic probability of taken action, given the current distribution.
-        torch::Tensor var = std_*std_;
-        torch::Tensor log_scale = std_.abs().log();
+        torch::Tensor var = (log_std_+log_std_).exp();
 
-        return -((action - mu_)*(action - mu_))/(2*var) - log_scale - log(sqrt(2*M_PI));
+        return -((action - mu_)*(action - mu_))/(2*var) - log_std_ - log(sqrt(2*M_PI));
     }
 };
 
