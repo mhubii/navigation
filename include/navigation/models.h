@@ -10,7 +10,7 @@ class Actor : public torch::nn::Module {
     public:
 
         // Constructor.
-        Actor(at::IntList input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t dof)
+        Actor(torch::IntArrayRef input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t dof)
             : // Left layers.
               left_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)),
               left_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)),
@@ -124,7 +124,7 @@ class Actor : public torch::nn::Module {
         // torch::nn::Linear right_fc4_;
 
         // Get number of elements of output.
-        int64_t GetConvOutput(at::IntList input_shape) {
+        int64_t GetConvOutput(torch::IntArrayRef input_shape) {
 
             torch::Tensor in = torch::zeros(input_shape, torch::kFloat).unsqueeze(0);
             torch::Tensor out = ForwardConv(in);
@@ -150,7 +150,7 @@ class Critic : public torch::nn::Module {
     public:
 
             // Constructor.
-        Critic(at::IntList input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t dof)
+        Critic(torch::IntArrayRef input_shape /*{int64_t channels, int64_t height, int64_t width}*/, int64_t dof)
             : // Left layers.
               left_conv1_(torch::nn::Conv2dOptions(3, 8, 5).stride(2)),
               left_conv2_(torch::nn::Conv2dOptions(8, 16, 5).stride(2)),
@@ -275,7 +275,7 @@ class Critic : public torch::nn::Module {
         torch::nn::Linear fcq_;
 
         // Get number of elements of output.
-        int64_t GetConvOutput(at::IntList input_shape) {
+        int64_t GetConvOutput(torch::IntArrayRef input_shape) {
 
             torch::Tensor in = torch::zeros(input_shape, torch::kFloat).unsqueeze(0);
             torch::Tensor out = ForwardConv(in);

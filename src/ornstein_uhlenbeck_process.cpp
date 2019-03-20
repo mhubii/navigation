@@ -1,6 +1,6 @@
 #include "ornstein_uhlenbeck_process.h"
 
-OUProcess::OUProcess(torch::IntList size, float mu, float theta, float sigma) 
+OUProcess::OUProcess(torch::IntArrayRef size, float mu, float theta, float sigma) 
     : mu_(mu*torch::ones(size)),
       state_(mu*torch::ones(size)),
       theta_(theta),

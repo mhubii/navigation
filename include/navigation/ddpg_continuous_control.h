@@ -11,7 +11,7 @@ class DDPGContinuousControl {
 
     public:
 
-        DDPGContinuousControl(torch::IntList input_shape, int64_t dof, int64_t batch_size, int64_t buffer_size, torch::Device device);
+        DDPGContinuousControl(torch::IntArrayRef input_shape, int64_t dof, int64_t batch_size, int64_t buffer_size, torch::Device device);
 
         void Step(state& state);
 

@@ -8,7 +8,7 @@ class OUProcess {
 
     public:
 
-        OUProcess(torch::IntList size, float mu, float theta, float sigma);
+        OUProcess(torch::IntArrayRef size, float mu, float theta, float sigma);
 
         void Reset();
 
