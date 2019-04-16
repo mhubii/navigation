@@ -36,9 +36,9 @@ states_batch ReplayMemory::Sample(torch::Device device) {
 	// Sample from deque.
 	if (deque_.size() > batch_size_) {
 
-        // Get the shapes. There are some issues with torch::IntList, thats why its done everytime.
-        torch::IntList img_shape = std::get<0>(deque_[0]).sizes();
-        torch::IntList action_shape = std::get<2>(deque_[0]).sizes();
+        // Get the shapes. There are some issues with torch::IntArrayRef, thats why its done everytime.
+        torch::IntArrayRef img_shape = std::get<0>(deque_[0]).sizes();
+        torch::IntArrayRef action_shape = std::get<2>(deque_[0]).sizes();
 
         // Allocate empty tensors.
 		torch::Tensor left_imgs = torch::zeros({batch_size_, img_shape[1], img_shape[2], img_shape[3]}, std::get<0>(deque_[0]).type());

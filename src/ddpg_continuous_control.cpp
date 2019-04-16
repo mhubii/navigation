@@ -10,7 +10,7 @@
 #define THETA 0.15f // Uncertainty parameters of the Ornstein-Uhlenbeck process.
 #define SIGMA 0.2f
 
-DDPGContinuousControl::DDPGContinuousControl(torch::IntList input_shape, int64_t dof, int64_t batch_size, int64_t buffer_size, torch::Device device)
+DDPGContinuousControl::DDPGContinuousControl(torch::IntArrayRef input_shape, int64_t dof, int64_t batch_size, int64_t buffer_size, torch::Device device)
     : batch_size_(batch_size),
 
       device_(device),

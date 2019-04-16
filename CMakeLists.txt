@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 set(CMAKE_INSTALL_PREFIX $ENV{HOME}/navigation CACHE STRING "Install path prefix default.")
 set(CMAKE_CXX_STANDARD 11)
